@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import Loadable from "../components/Loadable/Loadable";
+import ProtectedRoute from "./ProtectedRoute";
 
 // utilities routing
 const Layout = Loadable(lazy(() => import("../layout/Layout")));
@@ -10,7 +11,11 @@ const AddItems = Loadable(lazy(() => import("../pages/AddItems/AddItems")));
 
 const MainRoutes = {
   path: "/",
-  element: <Layout />,
+  element: (
+    <ProtectedRoute>
+      <Layout />
+    </ProtectedRoute>
+  ),
   children: [
     {
       path: "test",

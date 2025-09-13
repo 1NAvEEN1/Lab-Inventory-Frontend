@@ -8,7 +8,7 @@ import Loadable from '../components/Loadable/Loadable';
 // ==============================|| AUTHENTICATION ROUTING ||============================== //
 
 const AuthenticationRoutes = {
-  path: '/',
+  path: '/login',
   element: <UserLogin />,
 };
 

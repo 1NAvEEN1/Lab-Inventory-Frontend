@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -8,15 +8,53 @@ import {
   Button,
   useMediaQuery,
   Avatar,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import PersonIcon from "@mui/icons-material/Person";
+import LogoutIcon from "@mui/icons-material/Logout";
 import { useTheme } from "@mui/material/styles";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { clearAuth } from "../reducers/authSlice";
+import { showAlertMessage } from "../app/alertMessageController";
 
 const Header = ({ open, setOpen }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  
+  const [anchorEl, setAnchorEl] = useState(null);
+  const openMenu = Boolean(anchorEl);
+
+  const handleProfileClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleProfile = () => {
+    handleClose();
+    // Navigate to profile page
+    navigate("/profile");
+  };
+
+  const handleLogout = () => {
+    handleClose();
+    dispatch(clearAuth());
+    showAlertMessage({ message: "Logged out successfully", type: "success" });
+    navigate("/login");
+  };
 
   return (
     <AppBar
@@ -56,12 +94,79 @@ const Header = ({ open, setOpen }) => {
               sx={{ width: 24, height: 24 }}
             />
           </IconButton>
-          <IconButton size="small">
+          <IconButton 
+            size="small" 
+            onClick={handleProfileClick}
+            aria-controls={openMenu ? 'profile-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={openMenu ? 'true' : undefined}
+          >
             <Avatar
-              sx={{ width: 35, height: 35, bgcolor: "#e6f1fd" }}
-              alt="Remy Sharp"
-            ></Avatar>
+              sx={{ 
+                width: 35, 
+                height: 35, 
+                bgcolor: "#e6f1fd",
+                cursor: "pointer",
+                "&:hover": {
+                  bgcolor: "#d1e7fd",
+                }
+              }}
+              alt={user?.First_Name || "User"}
+            >
+              {user?.First_Name?.charAt(0) || "U"}
+            </Avatar>
           </IconButton>
+          
+          <Menu
+            id="profile-menu"
+            anchorEl={anchorEl}
+            open={openMenu}
+            onClose={handleClose}
+            onClick={handleClose}
+            PaperProps={{
+              elevation: 3,
+              sx: {
+                overflow: 'visible',
+                filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                mt: 1.5,
+                minWidth: 200,
+                '& .MuiAvatar-root': {
+                  width: 32,
+                  height: 32,
+                  ml: -0.5,
+                  mr: 1,
+                },
+                '&:before': {
+                  content: '""',
+                  display: 'block',
+                  position: 'absolute',
+                  top: 0,
+                  right: 14,
+                  width: 10,
+                  height: 10,
+                  bgcolor: 'background.paper',
+                  transform: 'translateY(-50%) rotate(45deg)',
+                  zIndex: 0,
+                },
+              },
+            }}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          >
+            <MenuItem onClick={handleProfile}>
+              <ListItemIcon>
+                <PersonIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Profile</ListItemText>
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Logout</ListItemText>
+            </MenuItem>
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>

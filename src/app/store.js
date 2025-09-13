@@ -1,6 +1,7 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import loaderReducer from "../reducers/loaderSlice";
 import successMessageSlice from "../reducers/successMessageSlice";
+import authReducer from "../reducers/authSlice";
 import { thunk } from "redux-thunk";
 import storage from "redux-persist/lib/storage";
 import persistReducer from "redux-persist/es/persistReducer";
@@ -15,6 +16,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   loader: loaderReducer,
   success: successMessageSlice,
+  auth: authReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
