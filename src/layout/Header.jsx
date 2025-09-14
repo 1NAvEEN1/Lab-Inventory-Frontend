@@ -31,7 +31,7 @@ const Header = ({ open, setOpen }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  
+
   const [anchorEl, setAnchorEl] = useState(null);
   const openMenu = Boolean(anchorEl);
 
@@ -94,29 +94,29 @@ const Header = ({ open, setOpen }) => {
               sx={{ width: 24, height: 24 }}
             />
           </IconButton>
-          <IconButton 
-            size="small" 
+          <IconButton
+            size="small"
             onClick={handleProfileClick}
-            aria-controls={openMenu ? 'profile-menu' : undefined}
+            aria-controls={openMenu ? "profile-menu" : undefined}
             aria-haspopup="true"
-            aria-expanded={openMenu ? 'true' : undefined}
+            aria-expanded={openMenu ? "true" : undefined}
           >
             <Avatar
-              sx={{ 
-                width: 35, 
-                height: 35, 
+              sx={{
+                width: 35,
+                height: 35,
                 bgcolor: "#e6f1fd",
                 cursor: "pointer",
                 "&:hover": {
                   bgcolor: "#d1e7fd",
-                }
+                },
               }}
               alt={user?.First_Name || "User"}
             >
               {user?.First_Name?.charAt(0) || "U"}
             </Avatar>
           </IconButton>
-          
+
           <Menu
             id="profile-menu"
             anchorEl={anchorEl}
@@ -126,42 +126,42 @@ const Header = ({ open, setOpen }) => {
             PaperProps={{
               elevation: 3,
               sx: {
-                overflow: 'visible',
-                filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-                mt: 1.5,
-                minWidth: 200,
-                '& .MuiAvatar-root': {
+                overflow: "visible",
+                filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
+                mt: 1,
+                minWidth: 120,
+                "& .MuiAvatar-root": {
                   width: 32,
                   height: 32,
                   ml: -0.5,
                   mr: 1,
                 },
-                '&:before': {
+                "&:before": {
                   content: '""',
-                  display: 'block',
-                  position: 'absolute',
+                  display: "block",
+                  position: "absolute",
                   top: 0,
-                  right: 14,
+                  right: 19,
                   width: 10,
                   height: 10,
-                  bgcolor: 'background.paper',
-                  transform: 'translateY(-50%) rotate(45deg)',
+                  bgcolor: "background.paper",
+                  transform: "translateY(-50%) rotate(45deg)",
                   zIndex: 0,
                 },
               },
             }}
-            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            transformOrigin={{ horizontal: "right", vertical: "top" }}
+            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
-            <MenuItem onClick={handleProfile}>
-              <ListItemIcon>
+            <MenuItem onClick={handleProfile} sx={{ height: 25 }}>
+              <ListItemIcon sx={{ mr: 0 }}>
                 <PersonIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText>Profile</ListItemText>
             </MenuItem>
             <Divider />
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
+            <MenuItem onClick={handleLogout} sx={{ height: 25 }}>
+              <ListItemIcon sx={{ mr: 0 }}>
                 <LogoutIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText>Logout</ListItemText>
