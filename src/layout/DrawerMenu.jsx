@@ -131,6 +131,8 @@ const DrawerMenu = ({ open, setOpen }) => {
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
+                        fontSize: "14px",
+                        fontWeight: 500,
                       },
                     }}
                   />
@@ -170,7 +172,16 @@ const DrawerMenu = ({ open, setOpen }) => {
                         },
                       }}
                     >
-                      {open && <ListItemText primary={childText} />}
+                      {open && (
+                        <ListItemText 
+                          primary={childText} 
+                          sx={{
+                            "& .MuiListItemText-primary": {
+                              fontSize: "14px",
+                            },
+                          }}
+                        />
+                      )}
                       {!open && (
                         <Tooltip title={childText} placement="right">
                           <Box width="100%" />

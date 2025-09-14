@@ -12,6 +12,10 @@ import {
   TextField,
   Typography,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import AttributeInput from "../../components/Attributes/AttributeInput";
 import CategoriesService from "../../services/categoriesService";
@@ -32,6 +36,7 @@ const AddItems = () => {
   const [fileFiles, setFileFiles] = useState([]);
 
   const [attributeValues, setAttributeValues] = useState({});
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     CategoriesService.getAll()
@@ -108,7 +113,7 @@ const AddItems = () => {
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={7}>
+      <Grid item xs={12} md={12}>
         <Card>
           <CardHeader title="Create Item" />
           <Divider />
@@ -180,43 +185,47 @@ const AddItems = () => {
                 <Button variant="contained" onClick={handleSave} disabled={!itemName}>
                   Save Item
                 </Button>
+                <Button variant="outlined" onClick={() => setPreviewOpen(true)}>
+                  Preview
+                </Button>
               </Stack>
             </Stack>
           </CardContent>
         </Card>
       </Grid>
-      <Grid item xs={12} md={5}>
-        <Card>
-          <CardHeader title="Preview" />
-          <Divider />
-          <CardContent>
-            <Typography variant="subtitle2" gutterBottom>
-              {itemName || "Untitled item"}
-            </Typography>
+      
+      <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Item Preview</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="subtitle2" gutterBottom>
+            {itemName || "Untitled item"}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            SKU: {sku || "—"}
+          </Typography>
+          {selectedCategory && (
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              SKU: {sku || "—"}
+              Category: {selectedCategory.name}
             </Typography>
-            {selectedCategory && (
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Category: {selectedCategory.name}
-              </Typography>
-            )}
-            <Divider sx={{ my: 2 }} />
-            {selectedCategory && (
-              <Stack spacing={1}>
-                {(selectedCategory.attributes || []).map((a) => (
-                  <Box key={a.label + a.type}>
-                    <Typography variant="caption" color="text.secondary">
-                      {a.label}
-                    </Typography>
-                    <Typography variant="body2">{String(attributeValues[a.label] ?? "")}</Typography>
-                  </Box>
-                ))}
-              </Stack>
-            )}
-          </CardContent>
-        </Card>
-      </Grid>
+          )}
+          <Divider sx={{ my: 2 }} />
+          {selectedCategory && (
+            <Stack spacing={1}>
+              {(selectedCategory.attributes || []).map((a) => (
+                <Box key={a.label + a.type}>
+                  <Typography variant="caption" color="text.secondary">
+                    {a.label}
+                  </Typography>
+                  <Typography variant="body2">{String(attributeValues[a.label] ?? "")}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPreviewOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   );
 };
