@@ -5,9 +5,15 @@ import ProtectedRoute from "./ProtectedRoute";
 // utilities routing
 const Layout = Loadable(lazy(() => import("../layout/Layout")));
 const Test = Loadable(lazy(() => import("../modules/pages/test/Test")));
-const AddItems = Loadable(lazy(() => import("../pages/AddItems/AddItems")));
-const CreateCategory = Loadable(lazy(() => import("../pages/Categories/CreateCategory")));
 const UserProfile = Loadable(lazy(() => import("../modules/user/profile/UserProfile")));
+
+// Inventory pages
+const Items = Loadable(lazy(() => import("../pages/Inventory/Items")));
+const Categories = Loadable(lazy(() => import("../pages/Inventory/Categories")));
+const Locations = Loadable(lazy(() => import("../pages/Inventory/Locations")));
+const AddItem = Loadable(lazy(() => import("../pages/Inventory/AddItem")));
+const AddCategory = Loadable(lazy(() => import("../pages/Inventory/AddCategory")));
+const CreateLocation = Loadable(lazy(() => import("../pages/Inventory/CreateLocation")));
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -24,16 +30,33 @@ const MainRoutes = {
       element: <Test />,
     },
     {
-      path: "add-items",
-      element: <AddItems />,
-    },
-    {
-      path: "categories/create",
-      element: <CreateCategory />,
-    },
-    {
       path: "profile",
       element: <UserProfile />,
+    },
+    // Inventory routes
+    {
+      path: "inventory/items",
+      element: <Items />,
+    },
+    {
+      path: "inventory/items/add-item",
+      element: <AddItem />,
+    },
+    {
+      path: "inventory/categories",
+      element: <Categories />,
+    },
+    {
+      path: "inventory/categories/add-category",
+      element: <AddCategory />,
+    },
+    {
+      path: "inventory/locations",
+      element: <Locations />,
+    },
+    {
+      path: "inventory/locations/add-location",
+      element: <CreateLocation />,
     },
   ],
 };

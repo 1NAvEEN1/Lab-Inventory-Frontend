@@ -19,16 +19,24 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import CategoryIcon from "@mui/icons-material/Category";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { Box } from "@mui/system";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 
 const navItems = [
   { text: "Getting Started", icon: <InboxIcon />, route: "/test" },
-  { text: "Item List", icon: <InventoryIcon />, route: "/items" },
-  { text: "Add Items", icon: <InventoryIcon />, route: "/add-items" },
+  {
+    text: "Inventory",
+    icon: <InventoryIcon />,
+    children: [
+      { text: "Items", route: "/inventory/items" },
+      { text: "Categories", route: "/inventory/categories" },
+      { text: "Locations", route: "/inventory/locations" },
+    ],
+  },
   { text: "Invite Teammate", icon: <GroupIcon />, route: "/invite" },
-  { text: "Create Category", icon: <InventoryIcon />, route: "/categories/create" },
   {
     text: "Settings",
     icon: <SettingsIcon />,
@@ -51,6 +59,7 @@ const DrawerMenu = ({ open, setOpen }) => {
 
   const [expandedMenus, setExpandedMenus] = useState({
     Settings: currentPath.startsWith("/settings"),
+    Inventory: currentPath.startsWith("/inventory"),
   });
 
   const handleExpandToggle = (label) => {

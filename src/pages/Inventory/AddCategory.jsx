@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AttributePreview from "../../components/Attributes/AttributePreview";
 import {
   ATTRIBUTE_TYPES,
@@ -24,7 +25,7 @@ import {
 import CategoriesService from "../../services/categoriesService";
 import FilesService from "../../services/filesService";
 import { showAlertMessage } from "../../app/alertMessageController";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const emptyAttribute = () => ({
   id: crypto.randomUUID(),
@@ -33,8 +34,11 @@ const emptyAttribute = () => ({
   options: [],
 });
 
-const CreateCategory = () => {
+const AddCategory = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("edit");
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [thumbnailFile, setThumbnailFile] = useState(null);
@@ -49,6 +53,41 @@ const CreateCategory = () => {
       .then(({ data }) => setAllCategories(data || []))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (editId) {
+      fetchCategory();
+    }
+  }, [editId]);
+
+  const fetchCategory = async () => {
+    try {
+      const response = await CategoriesService.getById(editId);
+      const category = response.data;
+      setName(category.name || "");
+      setDescription(category.description || "");
+      setThumbnailUrl(category.thumbnail || "");
+      setParentCategoryId(category.parentCategoryId || "");
+      
+      // Handle both array and object formats for attributes
+      const categoryAttributes = category.attributes || [];
+      if (Array.isArray(categoryAttributes)) {
+        setAttributes(categoryAttributes.length > 0 ? categoryAttributes : [emptyAttribute()]);
+      } else {
+        // Convert object to array format
+        const attributesArray = Object.keys(categoryAttributes).map(key => ({
+          id: crypto.randomUUID(),
+          label: key,
+          type: "text", // Default type
+          options: []
+        }));
+        setAttributes(attributesArray.length > 0 ? attributesArray : [emptyAttribute()]);
+      }
+    } catch (err) {
+      showAlertMessage({ message: "Failed to fetch category", type: "error" });
+      console.error("Error fetching category:", err);
+    }
+  };
 
   const handleAddAttribute = () =>
     setAttributes((prev) => [...prev, emptyAttribute()]);
@@ -83,20 +122,43 @@ const CreateCategory = () => {
         parentCategoryId: parentCategoryId || null,
         attributes: preparedAttributes,
       };
-      await CategoriesService.save(payload);
-      showAlertMessage({ message: "Category created", type: "success" });
-      navigate("/add-items");
+      
+      if (editId) {
+        await CategoriesService.update(editId, payload);
+        showAlertMessage({ message: "Category updated successfully", type: "success" });
+      } else {
+        await CategoriesService.save(payload);
+        showAlertMessage({ message: "Category created successfully", type: "success" });
+      }
+      
+      navigate("/inventory/categories");
     } catch (e) {
-      showAlertMessage({ message: "Failed to create category", type: "error" });
+      showAlertMessage({ 
+        message: editId ? "Failed to update category" : "Failed to create category", 
+        type: "error" 
+      });
     }
   };
 
   return (
     <Box sx={{ p: 1, pt: 0 }}>
-      <Typography variant="h5" gutterBottom textAlign={"center"}>
-        Create Category
-      </Typography>
+      {/* Header */}
+      <Stack direction="row" alignItems="center" justifyContent={"space-between"} spacing={0} sx={{ mb: 1 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate("/inventory/categories")}
+          color="primary"
+        >
+          Back
+        </Button>
+        <Typography variant="h5" gutterBottom>
+          {editId ? "Edit Category" : "Create Category"}
+        </Typography>
+        <div></div>
+      </Stack>
+      
       <Divider sx={{ mb: 2 }} />
+      
       <Box display={"flex"} justifyContent={"center"}>
         <Box width={"700px"}>
           <Box sx={{ mb: 3, maxWidth: "700px" }}>
@@ -362,7 +424,7 @@ const CreateCategory = () => {
                 size="small"
                 sx={{ ml: 2 }}
               >
-                Save Category
+                {editId ? "Update Category" : "Save Category"}
               </Button>
             </div>
           </Stack>
@@ -408,4 +470,4 @@ const CreateCategory = () => {
   );
 };
 
-export default CreateCategory;
+export default AddCategory;
