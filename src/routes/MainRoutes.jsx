@@ -6,6 +6,7 @@ import ProtectedRoute from "./ProtectedRoute";
 const Layout = Loadable(lazy(() => import("../layout/Layout")));
 const Test = Loadable(lazy(() => import("../modules/pages/test/Test")));
 const AddItems = Loadable(lazy(() => import("../pages/AddItems/AddItems")));
+const CreateCategory = Loadable(lazy(() => import("../pages/Categories/CreateCategory")));
 const UserProfile = Loadable(lazy(() => import("../modules/user/profile/UserProfile")));
 
 // ==============================|| MAIN ROUTING ||============================== //
@@ -25,6 +26,10 @@ const MainRoutes = {
     {
       path: "add-items",
       element: <AddItems />,
+    },
+    {
+      path: "categories/create",
+      element: <CreateCategory />,
     },
     {
       path: "profile",

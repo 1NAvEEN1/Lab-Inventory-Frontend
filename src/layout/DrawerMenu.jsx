@@ -28,6 +28,7 @@ const navItems = [
   { text: "Item List", icon: <InventoryIcon />, route: "/items" },
   { text: "Add Items", icon: <InventoryIcon />, route: "/add-items" },
   { text: "Invite Teammate", icon: <GroupIcon />, route: "/invite" },
+  { text: "Create Category", icon: <InventoryIcon />, route: "/categories/create" },
   {
     text: "Settings",
     icon: <SettingsIcon />,
