@@ -45,7 +45,7 @@ EllipsisLabel.propTypes = {
 };
 
 // Custom styled TreeItem component
-const CustomTreeItem = styled(TreeItem)(({ theme }) => ({
+const CustomTreeItem = styled(TreeItem)(({ theme, isRootNode }) => ({
   // Compact density + modern minimal styling
   position: "relative",
   [`& .${treeItemClasses.content}`]: {
@@ -63,8 +63,22 @@ const CustomTreeItem = styled(TreeItem)(({ theme }) => ({
     my: 0,
     width: "100%",
   },
+
+  "&:before": {
+    pointerEvents: "none",
+    content: '""',
+    position: "absolute",
+    width: 16,
+    left: -16,
+    top: 18,
+    borderBottom:
+      // only display if the TreeItem is not root node
+      !isRootNode
+        ? `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`
+        : "none",
+  },
   [`& .${treeItemClasses.group}`]: {
-    marginLeft: 15,
+    marginLeft: 16,
     paddingLeft: 18,
     borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
   },
@@ -73,14 +87,13 @@ const CustomTreeItem = styled(TreeItem)(({ theme }) => ({
     paddingLeft: 18,
     position: "relative",
     "&::before": {
-      content: '"."',
+      content: '""',
       position: "absolute",
-      color: "transparent",
-      width: 23,
-      borderBottom: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
+      left: 0,
+      top: 0,
+      bottom: "50%",
+      width: 1,
       borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
-      left: -5,
-      top: "0%",
     },
   },
   ...theme.applyStyles("light", {
@@ -159,7 +172,7 @@ export default function LocationsTree({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDesktop, nodes]);
 
-  const renderNodes = (items) => {
+  const renderNodes = (items, isRootLevel = false) => {
     return items.map((n) => {
       const id = String(n.id);
       const label = (
@@ -200,8 +213,13 @@ export default function LocationsTree({
       );
       const hasChildren = Array.isArray(n.children) && n.children.length > 0;
       return (
-        <CustomTreeItem key={id} itemId={id} label={label}>
-          {hasChildren ? renderNodes(n.children) : null}
+        <CustomTreeItem
+          key={id}
+          itemId={id}
+          label={label}
+          isRootNode={isRootLevel}
+        >
+          {hasChildren ? renderNodes(n.children, false) : null}
         </CustomTreeItem>
       );
     });
@@ -257,7 +275,7 @@ export default function LocationsTree({
         "& .MuiTreeItem-iconContainer": { mr: 0.75 },
       }}
     >
-      {renderNodes(nodes)}
+      {renderNodes(nodes, true)}
     </SimpleTreeView>
   );
 }

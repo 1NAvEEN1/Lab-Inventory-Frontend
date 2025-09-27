@@ -11,7 +11,7 @@ const Locations = () => {
     <Box sx={{ p: 0 }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-        <Typography variant="h4" component="h1">
+        <Typography variant="h5" component="h1">
           Locations
         </Typography>
         <Box sx={{ flexGrow: 1 }} />

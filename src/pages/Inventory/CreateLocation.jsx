@@ -7,12 +7,12 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import {
-  ArrowBack as ArrowBackIcon,
-} from "@mui/icons-material";
+import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import LocationsService from "../../services/locationsService";
 import { showAlertMessage } from "../../app/alertMessageController";
+import ParentLocationSelector from "../../components/ParentLocationSelector";
+import AttributesInput from "../../components/AttributesInput";
 
 const CreateLocation = () => {
   const navigate = useNavigate();
@@ -21,7 +21,13 @@ const CreateLocation = () => {
 
   const [locationName, setLocationName] = useState("");
   const [description, setDescription] = useState("");
-  const [address, setAddress] = useState("");
+  const [parentLocationId, setParentLocationId] = useState(null);
+  
+  // Debug parent location changes
+  useEffect(() => {
+    console.log("CreateLocation parentLocationId changed:", parentLocationId);
+  }, [parentLocationId]);
+  const [attributes, setAttributes] = useState({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -37,7 +43,8 @@ const CreateLocation = () => {
       const location = response.data;
       setLocationName(location.name || "");
       setDescription(location.description || "");
-      setAddress(location.address || "");
+      setParentLocationId(location.parentLocationId || null);
+      setAttributes(location.attributes || {});
     } catch (err) {
       showAlertMessage({ message: "Failed to fetch location", type: "error" });
       console.error("Error fetching location:", err);
@@ -57,22 +64,33 @@ const CreateLocation = () => {
       const payload = {
         name: locationName.trim(),
         description: description.trim(),
-        address: address.trim(),
+        parentId: parentLocationId,
+        attributes: attributes, // This is now a plain object from AttributesInput
       };
+      
+      console.log("Saving with payload:", payload);
 
       if (editId) {
         await LocationsService.update(editId, payload);
-        showAlertMessage({ message: "Location updated successfully", type: "success" });
+        showAlertMessage({
+          message: "Location updated successfully",
+          type: "success",
+        });
       } else {
         await LocationsService.save(payload);
-        showAlertMessage({ message: "Location created successfully", type: "success" });
+        showAlertMessage({
+          message: "Location created successfully",
+          type: "success",
+        });
       }
 
       navigate("/inventory/locations");
     } catch (err) {
-      showAlertMessage({ 
-        message: editId ? "Failed to update location" : "Failed to create location", 
-        type: "error" 
+      showAlertMessage({
+        message: editId
+          ? "Failed to update location"
+          : "Failed to create location",
+        type: "error",
       });
       console.error("Error saving location:", err);
     } finally {
@@ -83,13 +101,20 @@ const CreateLocation = () => {
   const handleClear = () => {
     setLocationName("");
     setDescription("");
-    setAddress("");
+    setParentLocationId(null);
+    setAttributes({});
   };
 
   return (
     <Box sx={{ p: 1, pt: 0 }}>
       {/* Header */}
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={2}
+        sx={{ mb: 1 }}
+      >
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate("/inventory/locations")}
@@ -97,19 +122,22 @@ const CreateLocation = () => {
         >
           Back
         </Button>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h6" gutterBottom>
           {editId ? "Edit Location" : "Create Location"}
         </Typography>
+        <div></div>
       </Stack>
-      
+
       <Divider sx={{ mb: 2 }} />
-      
+
       <Box display={"flex"} justifyContent={"center"}>
         <Box width={"700px"}>
           <Box sx={{ mb: 3, maxWidth: "700px" }}>
             <Stack spacing={2}>
               <Box>
-                <Typography sx={{ mb: 0.5 }}>Location Name *</Typography>
+                <Typography sx={{ mb: 0.5 }}>
+                  Location Name <span style={{ color: "red" }}>*</span>
+                </Typography>
                 <TextField
                   placeholder="Enter location name"
                   value={locationName}
@@ -117,6 +145,23 @@ const CreateLocation = () => {
                   fullWidth
                   size="small"
                   required
+                />
+              </Box>
+
+              <Box>
+                <Typography sx={{ mb: 0.5 }}>Parent Location</Typography>
+                <ParentLocationSelector
+                  value={parentLocationId}
+                  onChange={setParentLocationId}
+                  disabled={loading}
+                />
+              </Box>
+
+              <Box>
+                <AttributesInput
+                  value={attributes}
+                  onChange={setAttributes}
+                  disabled={loading}
                 />
               </Box>
 
@@ -129,19 +174,6 @@ const CreateLocation = () => {
                   fullWidth
                   multiline
                   minRows={3}
-                  size="small"
-                />
-              </Box>
-
-              <Box>
-                <Typography sx={{ mb: 0.5 }}>Address</Typography>
-                <TextField
-                  placeholder="Enter location address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  fullWidth
-                  multiline
-                  minRows={2}
                   size="small"
                 />
               </Box>
@@ -173,7 +205,11 @@ const CreateLocation = () => {
                 disabled={!locationName.trim() || loading}
                 size="small"
               >
-                {loading ? "Saving..." : editId ? "Update Location" : "Save Location"}
+                {loading
+                  ? "Saving..."
+                  : editId
+                  ? "Update Location"
+                  : "Save Location"}
               </Button>
             </div>
           </Stack>

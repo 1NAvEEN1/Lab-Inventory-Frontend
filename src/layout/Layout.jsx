@@ -23,6 +23,8 @@ const Layout = () => {
       >
         <Box
           p={2}
+          py={2}
+
           sx={{
             bgcolor: "#fff",
             minHeight: "calc(100vh - 64px)",
