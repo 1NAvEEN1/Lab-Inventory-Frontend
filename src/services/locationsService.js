@@ -6,6 +6,7 @@ const LocationsService = {
   getById: (locationId) => api.get(`/Locations/Get-By-Id/${locationId}`),
   update: (locationId, payload) => api.post(`/Locations/Update/${locationId}`, payload),
   delete: (locationId) => api.post(`/Locations/Delete/${locationId}`),
+  getTree: () => api.get(`/Locations/GetTree`),
 };
 
 export default LocationsService;
