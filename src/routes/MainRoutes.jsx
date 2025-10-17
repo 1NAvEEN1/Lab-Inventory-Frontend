@@ -51,6 +51,10 @@ const MainRoutes = {
       element: <AddCategory />,
     },
     {
+      path: "inventory/categories/view-category/:id",
+      element: <AddCategory />,
+    },
+    {
       path: "inventory/locations",
       element: <Locations />,
     },

@@ -17,7 +17,9 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import EditIcon from "@mui/icons-material/Edit";
 import AttributePreview from "../../components/Attributes/AttributePreview";
+import ParentCategorySelector from "../../components/ParentCategorySelector";
 import {
   ATTRIBUTE_TYPES,
   requiresOptions,
@@ -25,7 +27,7 @@ import {
 import CategoriesService from "../../services/categoriesService";
 import FilesService from "../../services/filesService";
 import { showAlertMessage } from "../../app/alertMessageController";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 
 // Safe id generator with fallbacks for environments where crypto.randomUUID
 // isn't available (older browsers or certain build/runtime targets).
@@ -63,37 +65,49 @@ const emptyAttribute = () => ({
 const AddCategory = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { id: viewId } = useParams();
   const editId = searchParams.get("edit");
+  const parentId = searchParams.get("parent");
+
+  // Determine the mode: view, edit, or create
+  const isViewMode = Boolean(viewId);
+  const isEditMode = Boolean(editId);
+  const isCreateMode = !isViewMode && !isEditMode;
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [parentCategoryId, setParentCategoryId] = useState("");
-  const [allCategories, setAllCategories] = useState([]);
   const [attributes, setAttributes] = useState([emptyAttribute()]);
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  React.useEffect(() => {
-    CategoriesService.getAll()
-      .then(({ data }) => setAllCategories(data || []))
-      .catch(() => {});
-  }, []);
-
   useEffect(() => {
-    if (editId) {
-      fetchCategory();
+    const categoryId = viewId || editId;
+    if (categoryId) {
+      fetchCategory(categoryId);
     }
-  }, [editId]);
+  }, [viewId, editId]);
 
-  const fetchCategory = async () => {
+  // Set parent category when parent parameter is provided
+  useEffect(() => {
+    if (parentId && isCreateMode) {
+      setParentCategoryId(String(parentId));
+    }
+  }, [parentId, isCreateMode]);
+
+  const fetchCategory = async (categoryId) => {
+    if (!categoryId) return;
     try {
-      const response = await CategoriesService.getById(editId);
+      const response = await CategoriesService.getById(categoryId);
       const category = response.data;
       setName(category.name || "");
       setDescription(category.description || "");
       setThumbnailUrl(category.thumbnail || "");
-      setParentCategoryId(category.parentCategoryId || "");
+      
+      // API may return parentCategoryId or parentId; normalize to string for the selector
+      const apiParentId = category?.parentId;
+      setParentCategoryId(apiParentId !== null ? String(apiParentId) : "");
       
       // Handle both array and object formats for attributes
       const categoryAttributes = category.attributes || [];
@@ -145,11 +159,14 @@ const AddCategory = () => {
         name,
         description,
         thumbnail: thumb || thumbnailUrl || "",
-        parentCategoryId: parentCategoryId || null,
+        // Convert parentCategoryId (string) back to number or null for API
+        parentCategoryId: parentCategoryId === "" || parentCategoryId === null
+          ? null 
+          : Number(parentCategoryId),
         attributes: preparedAttributes,
       };
       
-      if (editId) {
+      if (isEditMode) {
         await CategoriesService.update(editId, payload);
         showAlertMessage({ message: "Category updated successfully", type: "success" });
       } else {
@@ -160,9 +177,34 @@ const AddCategory = () => {
       navigate("/inventory/categories");
     } catch (e) {
       showAlertMessage({ 
-        message: editId ? "Failed to update category" : "Failed to create category", 
+        message: isEditMode ? "Failed to update category" : "Failed to create category", 
         type: "error" 
       });
+    }
+  };
+
+  const handleEdit = () => {
+    navigate(`/inventory/categories/add-category?edit=${viewId}`);
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this category?")) {
+      return;
+    }
+
+    try {
+      await CategoriesService.delete(viewId);
+      showAlertMessage({
+        message: "Category deleted successfully",
+        type: "success",
+      });
+      navigate("/inventory/categories");
+    } catch (err) {
+      showAlertMessage({
+        message: "Failed to delete category",
+        type: "error",
+      });
+      console.error("Error deleting category:", err);
     }
   };
 
@@ -177,10 +219,31 @@ const AddCategory = () => {
         >
           Back
         </Button>
-        <Typography variant="h5" gutterBottom>
-          {editId ? "Edit Category" : "Create Category"}
+        <Typography variant="h6" gutterBottom>
+          {isViewMode ? "View Category" : isEditMode ? "Edit Category" : "Create Category"}
         </Typography>
-        <div></div>
+        {isViewMode && (
+          <Stack direction="row" spacing={1}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<EditIcon />}
+              onClick={handleEdit}
+            >
+              Edit
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
+          </Stack>
+        )}
+        {!isViewMode && <div></div>}
       </Stack>
       
       <Divider sx={{ mb: 2 }} />
@@ -197,6 +260,7 @@ const AddCategory = () => {
                   onChange={(e) => setName(e.target.value)}
                   fullWidth
                   size="small"
+                  disabled={isViewMode}
                 />
               </Box>
 
@@ -210,6 +274,7 @@ const AddCategory = () => {
                   multiline
                   minRows={3}
                   size="small"
+                  disabled={isViewMode}
                 />
               </Box>
 
@@ -221,6 +286,7 @@ const AddCategory = () => {
                     component="label"
                     size="small"
                     sx={{ width: 150 }}
+                    disabled={isViewMode}
                   >
                     Upload Thumbnail
                     <input
@@ -230,6 +296,7 @@ const AddCategory = () => {
                       onChange={(e) =>
                         setThumbnailFile(e.target.files?.[0] || null)
                       }
+                      disabled={isViewMode}
                     />
                   </Button>
                   <TextField
@@ -238,27 +305,18 @@ const AddCategory = () => {
                     onChange={(e) => setThumbnailUrl(e.target.value)}
                     fullWidth
                     size="small"
+                    disabled={isViewMode}
                   />
                 </Stack>
               </Box>
 
               <Box>
                 <Typography sx={{ mb: 0.5 }}>Parent Category</Typography>
-                <TextField
-                  select
-                  placeholder="Select parent category"
+                <ParentCategorySelector
                   value={parentCategoryId}
-                  onChange={(e) => setParentCategoryId(e.target.value)}
-                  fullWidth
-                  size="small"
-                >
-                  <MenuItem value="">None</MenuItem>
-                  {allCategories.map((c) => (
-                    <MenuItem key={c._id || c.id} value={c._id || c.id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  onChange={setParentCategoryId}
+                  disabled={isViewMode}
+                />
               </Box>
             </Stack>
           </Box>
@@ -313,6 +371,7 @@ const AddCategory = () => {
                           }
                           fullWidth
                           size="small"
+                          disabled={isViewMode}
                         />
                       </Box>
                       <Box sx={{ flex: 0.4 }}>
@@ -330,6 +389,7 @@ const AddCategory = () => {
                           }
                           fullWidth
                           size="small"
+                          disabled={isViewMode}
                         >
                           {ATTRIBUTE_TYPES.map((t) => (
                             <MenuItem key={t.value} value={t.value}>
@@ -343,6 +403,7 @@ const AddCategory = () => {
                           color="error"
                           onClick={() => handleRemoveAttribute(attr.id)}
                           size="small"
+                          disabled={isViewMode}
                         >
                           <DeleteIcon />
                         </IconButton>
@@ -371,6 +432,7 @@ const AddCategory = () => {
                           fullWidth
                           size="small"
                           helperText="Used for dropdown and radio"
+                          disabled={isViewMode}
                         />
                         <Stack
                           direction="row"
@@ -390,24 +452,26 @@ const AddCategory = () => {
             </Stack>
 
             <Box sx={{ mt: 2, display: "flex", justifyContent: "end", pr: 2 }}>
-              <Button
-                startIcon={<AddIcon />}
-                onClick={handleAddAttribute}
-                variant="outlined"
-                size="small"
-                sx={{
-                  borderStyle: "dashed",
-                  borderWidth: 1.5,
-                  borderColor: "primary.main",
-                  color: "primary.main",
-                  "&:hover": {
-                    borderStyle: "solid",
-                    backgroundColor: "primary.50",
-                  },
-                }}
-              >
-                Add New Attribute
-              </Button>
+              {!isViewMode && (
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={handleAddAttribute}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    borderStyle: "dashed",
+                    borderWidth: 1.5,
+                    borderColor: "primary.main",
+                    color: "primary.main",
+                    "&:hover": {
+                      borderStyle: "solid",
+                      backgroundColor: "primary.50",
+                    },
+                  }}
+                >
+                  Add New Attribute
+                </Button>
+              )}
             </Box>
           </Box>
 
@@ -420,39 +484,43 @@ const AddCategory = () => {
             maxWidth={"700px"}
             pr={2}
           >
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setName("");
-                setDescription("");
-                setThumbnailFile(null);
-                setThumbnailUrl("");
-                setParentCategoryId("");
-                setAttributes([emptyAttribute()]);
-              }}
-              color="warning"
-              size="small"
-            >
-              Clear All Data
-            </Button>
-            <div>
-              <Button
-                variant="outlined"
-                onClick={() => setPreviewOpen(true)}
-                size="small"
-              >
-                Preview
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleSave}
-                disabled={!name}
-                size="small"
-                sx={{ ml: 2 }}
-              >
-                {editId ? "Update Category" : "Save Category"}
-              </Button>
-            </div>
+            {!isViewMode && (
+              <>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setName("");
+                    setDescription("");
+                    setThumbnailFile(null);
+                    setThumbnailUrl("");
+                    setParentCategoryId("");
+                    setAttributes([emptyAttribute()]);
+                  }}
+                  color="warning"
+                  size="small"
+                >
+                  Clear All Data
+                </Button>
+                <div>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setPreviewOpen(true)}
+                    size="small"
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleSave}
+                    disabled={!name}
+                    size="small"
+                    sx={{ ml: 2 }}
+                  >
+                    {isEditMode ? "Update Category" : "Save Category"}
+                  </Button>
+                </div>
+              </>
+            )}
           </Stack>
         </Box>
       </Box>

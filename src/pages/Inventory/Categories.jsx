@@ -10,7 +10,7 @@ const Categories = () => {
   const navigate = useNavigate();
 
   const handleView = (categoryId) => {
-    navigate(`/inventory/categories/${categoryId}`);
+    navigate(`/inventory/categories/view-category/${categoryId}`);
   };
 
   const handleAdd = (categoryId) => {
