@@ -58,6 +58,10 @@ const MainRoutes = {
       path: "inventory/locations/add-location",
       element: <CreateLocation />,
     },
+    {
+      path: "inventory/locations/view-location/:id",
+      element: <CreateLocation />,
+    },
   ],
 };
 export default MainRoutes;

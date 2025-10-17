@@ -27,8 +27,34 @@ import FilesService from "../../services/filesService";
 import { showAlertMessage } from "../../app/alertMessageController";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+// Safe id generator with fallbacks for environments where crypto.randomUUID
+// isn't available (older browsers or certain build/runtime targets).
+const generateId = () => {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+
+    if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      // Per RFC4122 v4
+      bytes[6] = (bytes[6] & 0x0f) | 0x40;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+      const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0"));
+      return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10, 16).join("")}`;
+    }
+  } catch (e) {
+    // ignore and fallback
+  }
+
+  // Last resort fallback
+  return `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+};
+
 const emptyAttribute = () => ({
-  id: crypto.randomUUID(),
+  id: generateId(),
   label: "",
   type: "text",
   options: [],
@@ -76,7 +102,7 @@ const AddCategory = () => {
       } else {
         // Convert object to array format
         const attributesArray = Object.keys(categoryAttributes).map(key => ({
-          id: crypto.randomUUID(),
+          id: generateId(),
           label: key,
           type: "text", // Default type
           options: []

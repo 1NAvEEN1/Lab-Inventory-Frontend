@@ -73,8 +73,9 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
   };
 
   const handleAddRow = () => {
-    const newAttributes = [...attributes, { key: "", value: "" }];
-    updateAttributes(newAttributes);
+    // Only update local state when adding an empty row so the parent
+    // doesn't receive an immediate onChange with no key and remove it.
+    setAttributes((prev) => [...prev, { key: "", value: "" }]);
   };
 
   const handleDeleteRow = (index) => {

@@ -39,7 +39,7 @@ const Locations = () => {
         <Box width={"100%"} maxWidth={"100%"}>
           <LocationsTree
             defaultExpandedIds={[]}
-            onView={(id) => handleView(id)}
+            onView={(id) => navigate(`/inventory/locations/view-location/${id}`)}
             onAdd={(id) =>
               navigate(`/inventory/locations/add-location?parent=${id}`)
             }

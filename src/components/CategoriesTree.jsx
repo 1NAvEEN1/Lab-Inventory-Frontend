@@ -240,7 +240,7 @@ export default function CategoriesTree({
             spacing={0.5}
             onClick={(e) => e.stopPropagation()}
           >
-            {onView && (
+            {/* {onView && (
               <IconButton
                 size="small"
                 aria-label="View"
@@ -248,7 +248,7 @@ export default function CategoriesTree({
               >
                 <VisibilityIcon fontSize="inherit" />
               </IconButton>
-            )}
+            )} */}
             {onAdd && (
               <IconButton
                 size="small"
