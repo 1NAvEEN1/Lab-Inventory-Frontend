@@ -52,17 +52,17 @@ const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
             sx={{
               width: "100%",
               cursor: "pointer",
-              backgroundColor: isSelected ? theme.palette.primary.main : "transparent",
-              color: isSelected ? theme.palette.primary.contrastText : "inherit",
+            //   backgroundColor: isSelected ? theme.palette.primary.main : "transparent",
+              color: isSelected ? theme.palette.primary.main: "inherit",
               borderRadius: 1,
-              px: 1,
+              px: 0,
               py: 0.5,
               mx: 0.5,
-              "&:hover": {
-                backgroundColor: isSelected 
-                  ? theme.palette.primary.dark
-                  : "action.hover",
-              },
+            //   "&:hover": {
+            //     backgroundColor: isSelected 
+            //       ? theme.palette.primary.dark
+            //       : "action.hover",
+            //   },
             }}
           >
             {node.name || "Untitled"}

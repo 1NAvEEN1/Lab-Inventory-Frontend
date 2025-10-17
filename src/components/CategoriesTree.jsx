@@ -11,26 +11,53 @@ import {
   styled,
   alpha,
   Chip,
+  Avatar,
 } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem, treeItemClasses } from "@mui/x-tree-view/TreeItem";
 import CategoriesService from "../services/categoriesService";
+import FilesService from "../services/filesService";
 import useResponsive from "../hooks/useResponsive";
 import {
   Visibility as VisibilityIcon,
   Add as AddIcon,
+  FolderOutlined as FolderIcon,
 } from "@mui/icons-material";
+import CategoryIcon from "@mui/icons-material/Category";
 
 // Tree node label with ellipsis and tooltip
-function EllipsisLabel({ text, description, attributes, itemsCount }) {
+function EllipsisLabel({
+  text,
+  description,
+  attributes,
+  itemsCount,
+  thumbnail,
+}) {
+  const thumbnailUrl = thumbnail
+    ? FilesService.getImageUrl("categories", thumbnail)
+    : null;
+
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+      <Avatar
+        src={thumbnailUrl}
+        sx={{
+          width: 24,
+          height: 24,
+          fontSize: "0.75rem",
+          backgroundColor: "grey.200",
+          color: "grey.600",
+          boxShadow: 1,
+        }}
+      >
+        {!thumbnail && <CategoryIcon sx={{ fontSize: 14 }} />}
+      </Avatar>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Tooltip title={text} placement="right" arrow>
           <Typography
             variant="body2"
             sx={{
-              maxWidth: 200,
+              maxWidth: 160,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -84,6 +111,7 @@ EllipsisLabel.propTypes = {
   description: PropTypes.string,
   attributes: PropTypes.array,
   itemsCount: PropTypes.number,
+  thumbnail: PropTypes.string,
 };
 
 // Custom styled TreeItem component
@@ -218,8 +246,10 @@ export default function CategoriesTree({
     return items.map((n) => {
       const id = String(n._id || n.id);
       const attributes = n?.attributes || [];
-      const attributesArray = Array.isArray(attributes) ? attributes : Object.keys(attributes);
-      
+      const attributesArray = Array.isArray(attributes)
+        ? attributes
+        : Object.keys(attributes);
+
       const label = (
         <Box
           sx={{
@@ -229,11 +259,12 @@ export default function CategoriesTree({
             width: "100%",
           }}
         >
-          <EllipsisLabel 
-            text={n.name || "Untitled Category"} 
+          <EllipsisLabel
+            text={n.name || "Untitled Category"}
             description={n.description}
             attributes={attributesArray}
             itemsCount={n.itemsCount}
+            thumbnail={n.thumbnail}
           />
           <Stack
             direction="row"

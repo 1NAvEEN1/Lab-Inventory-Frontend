@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Box,
   Button,
@@ -13,11 +13,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Avatar,
+  Snackbar,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
+import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import AttributePreview from "../../components/Attributes/AttributePreview";
 import ParentCategorySelector from "../../components/ParentCategorySelector";
 import {
@@ -33,11 +36,17 @@ import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 // isn't available (older browsers or certain build/runtime targets).
 const generateId = () => {
   try {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    if (
+      typeof crypto !== "undefined" &&
+      typeof crypto.randomUUID === "function"
+    ) {
       return crypto.randomUUID();
     }
 
-    if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    if (
+      typeof crypto !== "undefined" &&
+      typeof crypto.getRandomValues === "function"
+    ) {
       const bytes = new Uint8Array(16);
       crypto.getRandomValues(bytes);
       // Per RFC4122 v4
@@ -45,14 +54,18 @@ const generateId = () => {
       bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
       const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0"));
-      return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10, 16).join("")}`;
+      return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+        .slice(6, 8)
+        .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10, 16).join("")}`;
     }
   } catch (e) {
     // ignore and fallback
   }
 
   // Last resort fallback
-  return `id_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+  return `id_${Date.now().toString(36)}_${Math.random()
+    .toString(36)
+    .slice(2, 9)}`;
 };
 
 const emptyAttribute = () => ({
@@ -78,6 +91,12 @@ const AddCategory = () => {
   const [description, setDescription] = useState("");
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+
+  // Thumbnail drag and drop states
+  const [thumbnailPreview, setThumbnailPreview] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [showErrorSnackbar, setShowErrorSnackbar] = useState(false);
   const [parentCategoryId, setParentCategoryId] = useState("");
   const [attributes, setAttributes] = useState([emptyAttribute()]);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -104,24 +123,30 @@ const AddCategory = () => {
       setName(category.name || "");
       setDescription(category.description || "");
       setThumbnailUrl(category.thumbnail || "");
-      
+
       // API may return parentCategoryId or parentId; normalize to string for the selector
       const apiParentId = category?.parentId;
       setParentCategoryId(apiParentId !== null ? String(apiParentId) : "");
-      
+
       // Handle both array and object formats for attributes
       const categoryAttributes = category.attributes || [];
       if (Array.isArray(categoryAttributes)) {
-        setAttributes(categoryAttributes.length > 0 ? categoryAttributes : [emptyAttribute()]);
+        setAttributes(
+          categoryAttributes.length > 0
+            ? categoryAttributes
+            : [emptyAttribute()]
+        );
       } else {
         // Convert object to array format
-        const attributesArray = Object.keys(categoryAttributes).map(key => ({
+        const attributesArray = Object.keys(categoryAttributes).map((key) => ({
           id: generateId(),
           label: key,
           type: "text", // Default type
-          options: []
+          options: [],
         }));
-        setAttributes(attributesArray.length > 0 ? attributesArray : [emptyAttribute()]);
+        setAttributes(
+          attributesArray.length > 0 ? attributesArray : [emptyAttribute()]
+        );
       }
     } catch (err) {
       showAlertMessage({ message: "Failed to fetch category", type: "error" });
@@ -146,10 +171,119 @@ const AddCategory = () => {
     [attributes]
   );
 
+  // Initialize thumbnail preview from existing value
+  useEffect(() => {
+    if (thumbnailUrl && !thumbnailFile) {
+      // If thumbnailUrl is a relative path like "categories/1760742339898-Logo.png"
+      // we need to get the full URL from the server
+      const imageUrl = FilesService.getImageUrl("categories", thumbnailUrl);
+      setThumbnailPreview(imageUrl);
+    }
+  }, [thumbnailUrl, thumbnailFile]);
+
+  // File validation for thumbnail
+  const validateThumbnailFile = useCallback((file) => {
+    const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return "Please select a valid image file (JPEG, PNG, GIF, or WebP)";
+    }
+
+    if (file.size > maxSize) {
+      return "File size must be less than 2MB";
+    }
+
+    return null;
+  }, []);
+
+  // Handle thumbnail file selection
+  const handleThumbnailFileSelect = useCallback(
+    (file) => {
+      const error = validateThumbnailFile(file);
+      if (error) {
+        setUploadError(error);
+        setShowErrorSnackbar(true);
+        return;
+      }
+
+      setThumbnailFile(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setThumbnailPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      setUploadError("");
+    },
+    [validateThumbnailFile]
+  );
+
+  // Handle drag and drop for thumbnail
+  const handleThumbnailDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  }, []);
+
+  const handleThumbnailDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  }, []);
+
+  const handleThumbnailDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOver(false);
+
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        handleThumbnailFileSelect(files[0]);
+      }
+    },
+    [handleThumbnailFileSelect]
+  );
+
+  // Handle file input change for thumbnail
+  const handleThumbnailFileInputChange = useCallback(
+    (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleThumbnailFileSelect(file);
+      }
+    },
+    [handleThumbnailFileSelect]
+  );
+
+  // Remove thumbnail
+  const handleRemoveThumbnail = useCallback(() => {
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+    setThumbnailUrl("");
+    setUploadError("");
+  }, []);
+
   const handleUploadThumbnail = async () => {
-    if (!thumbnailFile) return "";
-    const { data } = await FilesService.upload(thumbnailFile);
-    return data?.url || data?.path || data; // backend dependent
+    if (thumbnailFile) {
+      // Upload new file
+      const { data } = await FilesService.uploadFile(
+        thumbnailFile,
+        "categories"
+      );
+      return data?.fileName;
+    }
+    // Return existing URL if no new file
+    return thumbnailUrl || "";
   };
 
   const handleSave = async () => {
@@ -160,25 +294,34 @@ const AddCategory = () => {
         description,
         thumbnail: thumb || thumbnailUrl || "",
         // Convert parentCategoryId (string) back to number or null for API
-        parentCategoryId: parentCategoryId === "" || parentCategoryId === null
-          ? null 
-          : Number(parentCategoryId),
+        parentCategoryId:
+          parentCategoryId === "" || parentCategoryId === null
+            ? null
+            : Number(parentCategoryId),
         attributes: preparedAttributes,
       };
-      
+
       if (isEditMode) {
         await CategoriesService.update(editId, payload);
-        showAlertMessage({ message: "Category updated successfully", type: "success" });
+        showAlertMessage({
+          message: "Category updated successfully",
+          type: "success",
+        });
       } else {
         await CategoriesService.save(payload);
-        showAlertMessage({ message: "Category created successfully", type: "success" });
+        showAlertMessage({
+          message: "Category created successfully",
+          type: "success",
+        });
       }
-      
+
       navigate("/inventory/categories");
     } catch (e) {
-      showAlertMessage({ 
-        message: isEditMode ? "Failed to update category" : "Failed to create category", 
-        type: "error" 
+      showAlertMessage({
+        message: isEditMode
+          ? "Failed to update category"
+          : "Failed to create category",
+        type: "error",
       });
     }
   };
@@ -211,7 +354,13 @@ const AddCategory = () => {
   return (
     <Box sx={{ p: 1, pt: 0 }}>
       {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent={"space-between"} spacing={0} sx={{ mb: 1 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent={"space-between"}
+        spacing={0}
+        sx={{ mb: 1 }}
+      >
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate("/inventory/categories")}
@@ -220,7 +369,11 @@ const AddCategory = () => {
           Back
         </Button>
         <Typography variant="h6" gutterBottom>
-          {isViewMode ? "View Category" : isEditMode ? "Edit Category" : "Create Category"}
+          {isViewMode
+            ? "View Category"
+            : isEditMode
+            ? "Edit Category"
+            : "Create Category"}
         </Typography>
         {isViewMode && (
           <Stack direction="row" spacing={1}>
@@ -245,9 +398,9 @@ const AddCategory = () => {
         )}
         {!isViewMode && <div></div>}
       </Stack>
-      
+
       <Divider sx={{ mb: 2 }} />
-      
+
       <Box display={"flex"} justifyContent={"center"}>
         <Box width={"700px"}>
           <Box sx={{ mb: 3, maxWidth: "700px" }}>
@@ -279,34 +432,94 @@ const AddCategory = () => {
               </Box>
 
               <Box>
-                <Typography sx={{ mb: 0.5 }}>Thumbnail</Typography>
-                <Stack direction="row" spacing={2}>
-                  <Button
-                    variant="outlined"
-                    component="label"
-                    size="small"
-                    sx={{ width: 150 }}
-                    disabled={isViewMode}
+                <Typography sx={{ mb: 0.5 }}>Category Thumbnail</Typography>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ mb: 3 }}
+                >
+                  <Box
+                    onDragOver={handleThumbnailDragOver}
+                    onDragLeave={handleThumbnailDragLeave}
+                    onDrop={handleThumbnailDrop}
+                    sx={{
+                      position: "relative",
+                    }}
                   >
-                    Upload Thumbnail
-                    <input
-                      hidden
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        setThumbnailFile(e.target.files?.[0] || null)
-                      }
-                      disabled={isViewMode}
-                    />
-                  </Button>
-                  <TextField
-                    placeholder="Or enter thumbnail URL"
-                    value={thumbnailUrl}
-                    onChange={(e) => setThumbnailUrl(e.target.value)}
-                    fullWidth
-                    size="small"
-                    disabled={isViewMode}
-                  />
+                    <Avatar
+                      src={thumbnailPreview}
+                      sx={{
+                        width: 80,
+                        height: 80,
+                        border: dragOver
+                          ? `2px dashed #1976d2`
+                          : `2px dashed #ccc`,
+                        borderColor: dragOver ? "primary.main" : "grey.300",
+                        backgroundColor: "grey.50",
+                        transition: "all 0.2s ease",
+                        "&:hover": !isViewMode && {
+                          borderColor: "primary.main",
+                          backgroundColor: "grey.100",
+                        },
+                      }}
+                    >
+                      {!thumbnailPreview && (
+                        <AddAPhotoIcon
+                          sx={{ fontSize: 32, color: "grey.500" }}
+                        />
+                      )}
+                    </Avatar>
+                  </Box>
+
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 0.5 }}
+                    >
+                      Drag and drop an image here, or click the avatar to browse
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 1 }}
+                    >
+                      Maximum file size: 2MB
+                    </Typography>
+
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        size="small"
+                        disabled={isViewMode}
+                        startIcon={<AddAPhotoIcon />}
+                      >
+                        Upload Image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleThumbnailFileInputChange}
+                          disabled={isViewMode}
+                          style={{ display: "none" }}
+                        />
+                      </Button>
+
+                      {thumbnailPreview && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="error"
+                          startIcon={<DeleteIcon />}
+                          onClick={handleRemoveThumbnail}
+                          disabled={isViewMode}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </Stack>
+                  </Box>
                 </Stack>
               </Box>
 
@@ -493,6 +706,8 @@ const AddCategory = () => {
                     setDescription("");
                     setThumbnailFile(null);
                     setThumbnailUrl("");
+                    setThumbnailPreview(null);
+                    setUploadError("");
                     setParentCategoryId("");
                     setAttributes([emptyAttribute()]);
                   }}
@@ -560,6 +775,14 @@ const AddCategory = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={showErrorSnackbar}
+        autoHideDuration={6000}
+        onClose={() => setShowErrorSnackbar(false)}
+        message={uploadError}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      />
     </Box>
   );
 };
