@@ -2,13 +2,11 @@ import React, { useEffect, useState, useMemo } from "react";
 import PropTypes from "prop-types";
 import {
   Box,
-  Autocomplete,
   TextField,
   Typography,
   CircularProgress,
   Alert,
   Paper,
-  alpha,
 } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem, treeItemClasses } from "@mui/x-tree-view/TreeItem";
@@ -52,17 +50,11 @@ const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
             sx={{
               width: "100%",
               cursor: "pointer",
-            //   backgroundColor: isSelected ? theme.palette.primary.main : "transparent",
               color: isSelected ? theme.palette.primary.main: "inherit",
               borderRadius: 1,
               px: 0,
               py: 0.5,
               mx: 0.5,
-            //   "&:hover": {
-            //     backgroundColor: isSelected 
-            //       ? theme.palette.primary.dark
-            //       : "action.hover",
-            //   },
             }}
           >
             {node.name || "Untitled"}
@@ -105,7 +97,7 @@ const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
   });
 };
 
-const ParentCategorySelector = ({
+const CategorySelector = ({
   value,
   onChange,
   error,
@@ -134,7 +126,7 @@ const ParentCategorySelector = ({
       } catch (e) {
         if (!isMounted) return;
         setErrorState("Failed to load categories");
-        console.error("ParentCategorySelector load error", e);
+        console.error("CategorySelector load error", e);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -205,16 +197,6 @@ const ParentCategorySelector = ({
     }
   }, [selectedNode]);
 
-  const handleChange = (event, newValue) => {
-    if (onChange) {
-      onChange(newValue ? String(newValue.id || newValue._id) : null);
-    }
-    // Clear input value when selection is made
-    if (newValue) {
-      setInputValue("");
-    }
-  };
-
   const handleInputChange = (event) => {
     const newValue = event.target.value;
     setInputValue(newValue);
@@ -231,10 +213,19 @@ const ParentCategorySelector = ({
     setOpen(false);
   };
 
+  const handleNoneClick = () => {
+    if (onChange) {
+      onChange("");
+    }
+    setInputValue("");
+    setDisplayValue("");
+    setOpen(false);
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (open && !event.target.closest("[data-parent-category-selector]")) {
+      if (open && !event.target.closest("[data-category-selector]")) {
         setOpen(false);
       }
     };
@@ -263,9 +254,9 @@ const ParentCategorySelector = ({
   }
 
   return (
-    <Box sx={{ position: "relative" }} data-parent-category-selector>
+    <Box sx={{ position: "relative" }} data-category-selector>
       <TextField
-        placeholder="Search and select parent category"
+        placeholder={value ? (selectedNode?.name || "Unknown Category") : "Search and select category"}
         value={displayValue}
         onChange={handleInputChange}
         onFocus={() => setOpen(true)}
@@ -298,6 +289,28 @@ const ParentCategorySelector = ({
             boxShadow: 3,
           }}
         >
+          {/* None option */}
+          <Box
+            onClick={handleNoneClick}
+            sx={{
+              paddingY: 1,
+              paddingX: 2,
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              cursor: "pointer",
+            //   backgroundColor: !value ? "primary.main" : "transparent",
+              color: !value ? "primary.main" : "primary.inherit",
+              borderRadius: 1,
+              mx: 1,
+              mb: 0.5,
+              "&:hover": {
+                backgroundColor: "action.hover",
+              },
+            }}
+          >
+            None (No Category)
+          </Box>
+
           {inputValue.trim() ? (
             <Box>
               {flatNodes
@@ -355,7 +368,7 @@ const ParentCategorySelector = ({
   );
 };
 
-ParentCategorySelector.propTypes = {
+CategorySelector.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func,
   error: PropTypes.bool,
@@ -363,7 +376,7 @@ ParentCategorySelector.propTypes = {
   disabled: PropTypes.bool,
 };
 
-ParentCategorySelector.defaultProps = {
+CategorySelector.defaultProps = {
   value: null,
   onChange: undefined,
   error: false,
@@ -371,4 +384,4 @@ ParentCategorySelector.defaultProps = {
   disabled: false,
 };
 
-export default ParentCategorySelector;
+export default CategorySelector;

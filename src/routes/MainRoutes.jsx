@@ -43,6 +43,10 @@ const MainRoutes = {
       element: <AddItem />,
     },
     {
+      path: "inventory/items/view-item/:id",
+      element: <AddItem />,
+    },
+    {
       path: "inventory/categories",
       element: <Categories />,
     },

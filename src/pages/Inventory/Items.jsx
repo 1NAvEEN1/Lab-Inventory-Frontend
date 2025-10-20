@@ -69,7 +69,7 @@ const Items = () => {
   };
 
   const handleView = (itemId) => {
-    navigate(`/inventory/items/${itemId}`);
+    navigate(`/inventory/items/view-item/${itemId}`);
   };
 
   if (loading) {

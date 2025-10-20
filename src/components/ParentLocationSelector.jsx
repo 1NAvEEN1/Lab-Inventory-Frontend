@@ -282,6 +282,7 @@ const ParentLocationSelector = ({
         size="small"
         fullWidth
         disabled={disabled}
+        autoComplete="off"
         InputProps={{
           endAdornment: (
             <>
