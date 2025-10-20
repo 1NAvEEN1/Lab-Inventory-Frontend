@@ -897,12 +897,12 @@ const AddItem = () => {
           {selectedCategory && (
             <Box sx={{ mb: 3, maxWidth: "700px" }}>
               <Typography variant="h6" sx={{ mb: 2 }}>
-                {selectedCategory.name} Attributes
+                {selectedCategory?.name} Attributes
               </Typography>
               <Divider sx={{ mb: 2 }} />
 
               <Stack spacing={0}>
-                {(selectedCategory.attributes || []).map((attr) => (
+                {(selectedCategory?.attributes || []).map((attr) => (
                   <Box key={attr.label + attr.type} sx={{ borderColor: "divider", p: 1 }}>
                     <AttributeInput
                       attribute={attr}
