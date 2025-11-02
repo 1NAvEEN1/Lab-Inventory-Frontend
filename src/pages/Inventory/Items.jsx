@@ -430,6 +430,44 @@ const Items = () => {
                         >
                           {item.description || "No description available"}
                         </Typography>
+
+                        {/* Inventory Summary */}
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: -1 }}>
+                          {item.ItemInventories && item.ItemInventories.length > 0 ? (
+                            <>
+                              {item.totalInventory &&
+                              Object.keys(item.totalInventory).length > 0 ? (
+                                <>
+                                  {Object.entries(item.totalInventory).map(
+                                    ([type, total]) => (
+                                      <Chip
+                                        key={type}
+                                        label={`${parseFloat(total).toLocaleString()} ${type}`}
+                                        size="small"
+                                        color="primary"
+                                        sx={{ fontWeight: 600, height: 22 }}
+                                      />
+                                    )
+                                  )}
+                                </>
+                              ) : null}
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontWeight: 500 }}
+                              >
+                                • {item.ItemInventories.length} locations
+                              </Typography>
+                            </>
+                          ) : (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              No inventory
+                            </Typography>
+                          )}
+                        </Stack>
                       </CardContent>
 
                       {/* Actions */}
@@ -477,6 +515,9 @@ const Items = () => {
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600, minWidth: 250 }}>
                       Description
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, width: 180 }}>
+                      Inventory
                     </TableCell>
                     <TableCell
                       align="right"
@@ -597,6 +638,42 @@ const Items = () => {
                           >
                             {item.description || "No description available"}
                           </Typography>
+                        </TableCell>
+
+                        {/* Inventory */}
+                        <TableCell>
+                          {item.ItemInventories &&
+                          item.ItemInventories.length > 0 ? (
+                            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                              {item.totalInventory &&
+                              Object.keys(item.totalInventory).length > 0 ? (
+                                <>
+                                  {Object.entries(item.totalInventory).map(
+                                    ([type, total]) => (
+                                      <Chip
+                                        key={type}
+                                        label={`${parseFloat(total).toLocaleString()} ${type}`}
+                                        size="small"
+                                        color="primary"
+                                        variant="outlined"
+                                        sx={{ fontWeight: 600, height: 22 }}
+                                      />
+                                    )
+                                  )}
+                                </>
+                              ) : null}
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                • {item.ItemInventories.length} locations
+                              </Typography>
+                            </Stack>
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">
+                              No inventory
+                            </Typography>
+                          )}
                         </TableCell>
 
                         {/* Actions */}

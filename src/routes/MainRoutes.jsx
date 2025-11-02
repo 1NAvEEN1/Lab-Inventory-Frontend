@@ -14,6 +14,7 @@ const Locations = Loadable(lazy(() => import("../pages/Inventory/Locations")));
 const AddItem = Loadable(lazy(() => import("../pages/Inventory/AddItem")));
 const AddCategory = Loadable(lazy(() => import("../pages/Inventory/AddCategory")));
 const CreateLocation = Loadable(lazy(() => import("../pages/Inventory/CreateLocation")));
+const ItemInventory = Loadable(lazy(() => import("../pages/Inventory/ItemInventory")));
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -45,6 +46,10 @@ const MainRoutes = {
     {
       path: "inventory/items/view-item/:id",
       element: <AddItem />,
+    },
+    {
+      path: "inventory/items/inventory/:itemId",
+      element: <ItemInventory />,
     },
     {
       path: "inventory/categories",
