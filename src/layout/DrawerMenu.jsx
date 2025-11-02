@@ -12,21 +12,18 @@ import {
 } from "@mui/material";
 import InboxIcon from "@mui/icons-material/Inbox";
 import InventoryIcon from "@mui/icons-material/Inventory";
-import GroupIcon from "@mui/icons-material/Group";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
-import CategoryIcon from "@mui/icons-material/Category";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { Box } from "@mui/system";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 
 const navItems = [
-  { text: "Getting Started", icon: <InboxIcon />, route: "/test" },
+  { text: "Dashboard", icon: <InboxIcon />, route: "/test" },
   {
     text: "Inventory",
     icon: <InventoryIcon />,
@@ -36,7 +33,7 @@ const navItems = [
       { text: "Locations", route: "/inventory/locations" },
     ],
   },
-  { text: "Invite Teammate", icon: <GroupIcon />, route: "/invite" },
+  // { text: "Invite Teammate", icon: <GroupIcon />, route: "/invite" },
   {
     text: "Settings",
     icon: <SettingsIcon />,

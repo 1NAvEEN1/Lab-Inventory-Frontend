@@ -69,7 +69,6 @@ const generateId = () => {
 };
 
 const emptyAttribute = () => ({
-  id: generateId(),
   label: "",
   type: "text",
   options: [],
@@ -139,7 +138,6 @@ const AddCategory = () => {
       } else {
         // Convert object to array format
         const attributesArray = Object.keys(categoryAttributes).map((key) => ({
-          id: generateId(),
           label: key,
           type: "text", // Default type
           options: [],
@@ -156,18 +154,18 @@ const AddCategory = () => {
 
   const handleAddAttribute = () =>
     setAttributes((prev) => [...prev, emptyAttribute()]);
-  const handleRemoveAttribute = (id) =>
-    setAttributes((prev) => prev.filter((a) => a.id !== id));
-  const handleAttrChange = (id, patch) =>
+  const handleRemoveAttribute = (index) =>
+    setAttributes((prev) => prev.filter((_, i) => i !== index));
+  const handleAttrChange = (index, patch) =>
     setAttributes((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...patch } : a))
+      prev.map((a, i) => (i === index ? { ...a, ...patch } : a))
     );
 
   const preparedAttributes = useMemo(
     () =>
       attributes
         .filter((a) => a.label && a.type)
-        .map(({ id, ...rest }) => rest),
+        .map((attr) => attr),
     [attributes]
   );
 
@@ -294,7 +292,7 @@ const AddCategory = () => {
         description,
         thumbnail: thumb || thumbnailUrl || "",
         // Convert parentCategoryId (string) back to number or null for API
-        parentCategoryId:
+        parentId:
           parentCategoryId === "" || parentCategoryId === null
             ? null
             : Number(parentCategoryId),
@@ -571,8 +569,8 @@ const AddCategory = () => {
             </Box>
 
             <Stack spacing={0.5}>
-              {attributes.map((attr) => (
-                <Box key={attr.id} sx={{ borderColor: "divider", p: 1 }}>
+              {attributes.map((attr, index) => (
+                <Box key={index} sx={{ borderColor: "divider", p: 1 }}>
                   <Stack spacing={2}>
                     <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                       <Box sx={{ flex: 0.6 }}>
@@ -580,7 +578,7 @@ const AddCategory = () => {
                           placeholder="Enter attribute label"
                           value={attr.label}
                           onChange={(e) =>
-                            handleAttrChange(attr.id, { label: e.target.value })
+                            handleAttrChange(index, { label: e.target.value })
                           }
                           fullWidth
                           size="small"
@@ -593,7 +591,7 @@ const AddCategory = () => {
                           placeholder="Select data type"
                           value={attr.type}
                           onChange={(e) =>
-                            handleAttrChange(attr.id, {
+                            handleAttrChange(index, {
                               type: e.target.value,
                               options: requiresOptions(e.target.value)
                                 ? attr.options || []
@@ -614,7 +612,7 @@ const AddCategory = () => {
                       <Box>
                         <IconButton
                           color="error"
-                          onClick={() => handleRemoveAttribute(attr.id)}
+                          onClick={() => handleRemoveAttribute(index)}
                           size="small"
                           disabled={isViewMode}
                         >
@@ -635,7 +633,7 @@ const AddCategory = () => {
                           placeholder="Enter options separated by commas"
                           value={(attr.options || []).join(", ")}
                           onChange={(e) =>
-                            handleAttrChange(attr.id, {
+                            handleAttrChange(index, {
                               options: e.target.value
                                 .split(",")
                                 .map((x) => x.trim())
