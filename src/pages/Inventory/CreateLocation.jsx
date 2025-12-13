@@ -17,6 +17,8 @@ import LocationsService from "../../services/locationsService";
 import { showAlertMessage } from "../../app/alertMessageController";
 import ParentLocationSelector from "../../components/ParentLocationSelector";
 import AttributesInput from "../../components/AttributesInput";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import LocationReassignDialog from "../../components/LocationReassignDialog";
 
 const CreateLocation = () => {
   const navigate = useNavigate();
@@ -36,6 +38,9 @@ const CreateLocation = () => {
 
   const [attributes, setAttributes] = useState({});
   const [loading, setLoading] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const locationId = viewId || editId;
@@ -130,13 +135,21 @@ const CreateLocation = () => {
     navigate(`/inventory/locations/add-location?edit=${viewId}`);
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this location?")) {
-      return;
-    }
+  const handleDelete = () => {
+    // Open the initial confirmation dialog
+    setDeleteConfirmOpen(true);
+  };
 
+  const handleDeleteConfirm = () => {
+    // Close first dialog and open reassign dialog
+    setDeleteConfirmOpen(false);
+    setReassignDialogOpen(true);
+  };
+
+  const handleDeleteWithoutReassign = async () => {
     try {
-      setLoading(true);
+      setDeleting(true);
+      setDeleteConfirmOpen(false);
       await LocationsService.delete(viewId);
       showAlertMessage({
         message: "Location deleted successfully",
@@ -150,7 +163,30 @@ const CreateLocation = () => {
       });
       console.error("Error deleting location:", err);
     } finally {
-      setLoading(false);
+      setDeleting(false);
+    }
+  };
+
+  const handleReassignAndDelete = async (newLocationId) => {
+    try {
+      setDeleting(true);
+      await LocationsService.delete(viewId, {
+        newLocationId: Number(newLocationId),
+      });
+      showAlertMessage({
+        message: "Location deleted successfully",
+        type: "success",
+      });
+      navigate("/inventory/locations");
+    } catch (err) {
+      showAlertMessage({
+        message: "Failed to delete location",
+        type: "error",
+      });
+      console.error("Error deleting location:", err);
+    } finally {
+      setDeleting(false);
+      setReassignDialogOpen(false);
     }
   };
 
@@ -296,6 +332,40 @@ const CreateLocation = () => {
           )}
         </Box>
       </Box>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Location"
+        message="This location may have items associated with it. How would you like to proceed?"
+        confirmText="Reassign Items"
+        cancelText="Cancel"
+        confirmColor="primary"
+        variant="warning"
+        loading={deleting}
+      >
+        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={handleDeleteWithoutReassign}
+            disabled={deleting}
+            size="medium"
+          >
+            {deleting ? "Deleting..." : "Delete Without Reassigning"}
+          </Button>
+        </Box>
+      </ConfirmDialog>
+
+      <LocationReassignDialog
+        open={reassignDialogOpen}
+        onClose={() => setReassignDialogOpen(false)}
+        onConfirm={handleReassignAndDelete}
+        locationName={locationName}
+        currentLocationId={viewId}
+        loading={deleting}
+      />
     </Box>
   );
 };

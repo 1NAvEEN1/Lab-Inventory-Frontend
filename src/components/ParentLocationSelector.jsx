@@ -119,6 +119,8 @@ const ParentLocationSelector = ({
   error,
   helperText,
   disabled,
+  excludeLocationId,
+  placeholder,
 }) => {
   const [loading, setLoading] = useState(false);
   const [errorState, setErrorState] = useState(null);
@@ -155,10 +157,12 @@ const ParentLocationSelector = ({
 
   // Flatten tree for search
   const flatNodes = useMemo(() => {
-    const flattened = flattenTree(nodes);
+    const flattened = flattenTree(nodes).filter(
+      (node) => !excludeLocationId || String(node.id || node._id) !== String(excludeLocationId)
+    );
     console.log("Flat nodes:", flattened);
     return flattened;
-  }, [nodes]);
+  }, [nodes, excludeLocationId]);
 
   // Filter nodes based on search input
   const filteredNodes = useMemo(() => {
@@ -273,7 +277,7 @@ const ParentLocationSelector = ({
     <Box sx={{ position: "relative" }} data-parent-location-selector>
       <TextField
         // label="Parent Location"
-        placeholder="Search and select parent location"
+        placeholder={placeholder || "Search and select parent location"}
         value={displayValue}
         onChange={handleInputChange}
         onFocus={() => setOpen(true)}
@@ -373,6 +377,8 @@ ParentLocationSelector.propTypes = {
   error: PropTypes.bool,
   helperText: PropTypes.string,
   disabled: PropTypes.bool,
+  excludeLocationId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  placeholder: PropTypes.string,
 };
 
 ParentLocationSelector.defaultProps = {
@@ -381,6 +387,8 @@ ParentLocationSelector.defaultProps = {
   error: false,
   helperText: "",
   disabled: false,
+  excludeLocationId: null,
+  placeholder: null,
 };
 
 export default ParentLocationSelector;
