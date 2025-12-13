@@ -111,6 +111,8 @@ const ParentCategorySelector = ({
   error,
   helperText,
   disabled,
+  excludeCategoryId,
+  placeholder,
 }) => {
   const [loading, setLoading] = useState(false);
   const [errorState, setErrorState] = useState(null);
@@ -147,10 +149,12 @@ const ParentCategorySelector = ({
 
   // Flatten tree for search
   const flatNodes = useMemo(() => {
-    const flattened = flattenTree(nodes);
-    console.log("Flat nodes:", flattened);
+    const flattened = flattenTree(nodes).filter(
+      (node) => !excludeCategoryId || String(node.id || node._id) !== String(excludeCategoryId)
+    );
+    console.log("Flattened nodes:", flattened);
     return flattened;
-  }, [nodes]);
+  }, [nodes, excludeCategoryId]);
 
   // Filter nodes based on search input
   const filteredNodes = useMemo(() => {
@@ -265,7 +269,7 @@ const ParentCategorySelector = ({
   return (
     <Box sx={{ position: "relative" }} data-parent-category-selector>
       <TextField
-        placeholder="Search and select parent category"
+        placeholder={placeholder || "Search and select parent category"}
         value={displayValue}
         onChange={handleInputChange}
         onFocus={() => setOpen(true)}
@@ -361,6 +365,8 @@ ParentCategorySelector.propTypes = {
   error: PropTypes.bool,
   helperText: PropTypes.string,
   disabled: PropTypes.bool,
+  excludeCategoryId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  placeholder: PropTypes.string,
 };
 
 ParentCategorySelector.defaultProps = {
@@ -369,6 +375,8 @@ ParentCategorySelector.defaultProps = {
   error: false,
   helperText: "",
   disabled: false,
+  excludeCategoryId: null,
+  placeholder: null,
 };
 
 export default ParentCategorySelector;

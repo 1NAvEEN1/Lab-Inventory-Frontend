@@ -23,6 +23,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import AttributePreview from "../../components/Attributes/AttributePreview";
 import ParentCategorySelector from "../../components/ParentCategorySelector";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import CategoryReassignDialog from "../../components/CategoryReassignDialog";
 import {
   ATTRIBUTE_TYPES,
   requiresOptions,
@@ -99,6 +101,9 @@ const AddCategory = () => {
   const [parentCategoryId, setParentCategoryId] = useState("");
   const [attributes, setAttributes] = useState([emptyAttribute()]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const categoryId = viewId || editId;
@@ -328,12 +333,21 @@ const AddCategory = () => {
     navigate(`/inventory/categories/add-category?edit=${viewId}`);
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this category?")) {
-      return;
-    }
+  const handleDelete = () => {
+    // Open the initial confirmation dialog
+    setDeleteConfirmOpen(true);
+  };
 
+  const handleDeleteConfirm = () => {
+    // Close first dialog and open reassign dialog
+    setDeleteConfirmOpen(false);
+    setReassignDialogOpen(true);
+  };
+
+  const handleDeleteWithoutReassign = async () => {
     try {
+      setDeleting(true);
+      setDeleteConfirmOpen(false);
       await CategoriesService.delete(viewId);
       showAlertMessage({
         message: "Category deleted successfully",
@@ -346,6 +360,31 @@ const AddCategory = () => {
         type: "error",
       });
       console.error("Error deleting category:", err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleReassignAndDelete = async (newCategoryId) => {
+    try {
+      setDeleting(true);
+      await CategoriesService.delete(viewId, {
+        newCategoryId: Number(newCategoryId),
+      });
+      showAlertMessage({
+        message: "Category deleted successfully",
+        type: "success",
+      });
+      navigate("/inventory/categories");
+    } catch (err) {
+      showAlertMessage({
+        message: "Failed to delete category",
+        type: "error",
+      });
+      console.error("Error deleting category:", err);
+    } finally {
+      setDeleting(false);
+      setReassignDialogOpen(false);
     }
   };
 
@@ -780,6 +819,40 @@ const AddCategory = () => {
         onClose={() => setShowErrorSnackbar(false)}
         message={uploadError}
         anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Category"
+        message="This category may have items associated with it. How would you like to proceed?"
+        confirmText="Reassign Items"
+        cancelText="Cancel"
+        confirmColor="primary"
+        variant="warning"
+        loading={deleting}
+      >
+        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={handleDeleteWithoutReassign}
+            disabled={deleting}
+            size="medium"
+          >
+            {deleting ? "Deleting..." : "Delete Without Reassigning"}
+          </Button>
+        </Box>
+      </ConfirmDialog>
+
+      <CategoryReassignDialog
+        open={reassignDialogOpen}
+        onClose={() => setReassignDialogOpen(false)}
+        onConfirm={handleReassignAndDelete}
+        categoryName={name}
+        currentCategoryId={viewId}
+        loading={deleting}
       />
     </Box>
   );

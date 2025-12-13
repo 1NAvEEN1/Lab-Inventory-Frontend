@@ -6,7 +6,7 @@ const CategoriesService = {
   getTree: () => api.get("/Categories/GetTree"),
   getById: (categoryId) => api.get(`/Categories/Get-By-Id/${categoryId}`),
   update: (categoryId, payload) => api.post(`/Categories/Update/${categoryId}`, payload),
-  delete: (categoryId) => api.post(`/Categories/Delete/${categoryId}`),
+  delete: (categoryId, payload) => api.post(`/Categories/Delete/${categoryId}`, payload || {}),
 };
 
 export default CategoriesService;
