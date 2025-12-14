@@ -9,10 +9,7 @@ import {
   Paper,
   Divider,
 } from "@mui/material";
-import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-} from "@mui/icons-material";
+import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
 const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
   const [attributes, setAttributes] = useState([{ key: "", value: "" }]);
@@ -25,7 +22,9 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
         if (typeof parsed === "object" && parsed !== null) {
           const entries = Object.entries(parsed);
           if (entries.length > 0) {
-            setAttributes(entries.map(([key, value]) => ({ key, value: String(value) })));
+            setAttributes(
+              entries.map(([key, value]) => ({ key, value: String(value) }))
+            );
           } else {
             setAttributes([{ key: "", value: "" }]);
           }
@@ -44,16 +43,16 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
   // Convert attributes to object and call onChange
   const updateAttributes = (newAttributes) => {
     setAttributes(newAttributes);
-    
+
     // Filter out empty rows and convert to object
-    const filtered = newAttributes.filter(attr => attr.key.trim() !== "");
+    const filtered = newAttributes.filter((attr) => attr.key.trim() !== "");
     const attributesObj = {};
-    filtered.forEach(attr => {
+    filtered.forEach((attr) => {
       if (attr.key.trim()) {
         attributesObj[attr.key.trim()] = attr.value.trim();
       }
     });
-    
+
     // Pass as object instead of JSON string
     if (onChange) {
       onChange(attributesObj);
@@ -90,11 +89,11 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
       <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
         Attributes
       </Typography>
-      
-      <Paper 
-        variant="outlined" 
-        sx={{ 
-          p: 2, 
+
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
           border: error ? "1px solid #d32f2f" : "1px solid rgba(0, 0, 0, 0.23)",
           borderRadius: 1,
         }}
@@ -104,12 +103,12 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
             <Box key={index}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <TextField
-                  placeholder="Key"
+                  placeholder="Attribute"
                   value={attr.key}
                   onChange={(e) => handleKeyChange(index, e.target.value)}
                   size="small"
                   disabled={disabled}
-                  sx={{ flex: 1 }}
+                  sx={{ flex: 2 }}
                   error={error && attr.key.trim() === ""}
                 />
                 <TextField
@@ -125,27 +124,29 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
                   disabled={disabled || attributes.length === 1}
                   size="small"
                   color="error"
-                  sx={{ 
-                    minWidth: 32, 
+                  sx={{
+                    minWidth: 32,
                     height: 32,
-                    opacity: attributes.length === 1 ? 0.3 : 1 
+                    opacity: attributes.length === 1 ? 0.3 : 1,
                   }}
                 >
                   <DeleteIcon fontSize="small" />
                 </IconButton>
               </Stack>
               {index < attributes.length - 1 && (
-                <Divider sx={{ mt: 1, opacity: 0.5 }} />
+                <Divider sx={{ mt: 2, opacity: 0.5 }} />
               )}
             </Box>
           ))}
-          
-          <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-            <Typography 
-              variant="caption" 
-              color="text.secondary" 
-              sx={{ mr: 1 }}
-            >
+
+          <Box
+            sx={{
+              display: disabled ? "none" : "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
               Add attribute
             </Typography>
             <IconButton
@@ -153,14 +154,14 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
               disabled={disabled}
               size="small"
               color="primary"
-              sx={{ 
-                minWidth: 32, 
+              sx={{
+                minWidth: 32,
                 height: 32,
                 border: "1px dashed #1976d2",
                 borderRadius: 1,
                 "&:hover": {
                   backgroundColor: "rgba(25, 118, 210, 0.04)",
-                }
+                },
               }}
             >
               <AddIcon fontSize="small" />
@@ -168,10 +169,10 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
           </Box>
         </Stack>
       </Paper>
-      
+
       {helperText && (
-        <Typography 
-          variant="caption" 
+        <Typography
+          variant="caption"
           color={error ? "error" : "text.secondary"}
           sx={{ mt: 0.5, display: "block" }}
         >

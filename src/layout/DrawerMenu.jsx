@@ -37,15 +37,15 @@ const navItems = [
   {
     text: "Settings",
     icon: <SettingsIcon />,
-    children: [
-      { text: "Team", route: "/settings/team" },
-      { text: "Members", route: "/settings/members" },
-      { text: "Notifications", route: "/settings/notifications" },
-      { text: "Integrations & API", route: "/settings/integrations" },
-      { text: "Billing", route: "/settings/billing" },
-    ],
+    // children: [
+    //   { text: "Team", route: "/settings/team" },
+    //   { text: "Members", route: "/settings/members" },
+    //   { text: "Notifications", route: "/settings/notifications" },
+    //   { text: "Integrations & API", route: "/settings/integrations" },
+    //   { text: "Billing", route: "/settings/billing" },
+    // ],
   },
-  { text: "Logout", icon: <LogoutIcon />, route: "/logout" },
+  // { text: "Logout", icon: <LogoutIcon />, route: "/logout" },
 ];
 
 const DrawerMenu = ({ open, setOpen }) => {

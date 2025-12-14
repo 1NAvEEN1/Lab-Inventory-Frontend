@@ -1153,7 +1153,7 @@ const AddItem = () => {
               <Divider />
 
               {combinedAttributes.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" mt={2} mb={2}>
                   No attributes yet
                 </Typography>
               )}
@@ -1191,7 +1191,7 @@ const AddItem = () => {
               </Stack>
               {!isViewMode && (
                 <>
-                  <Divider sx={{ mt: 2, mb: 2 }} />
+                  <Divider sx={{ mt: 0, mb: 2 }} />
                   <Box display={"flex"} justifyContent={"end"}>
                     <Button
                       startIcon={<AddIcon />}

@@ -32,7 +32,7 @@ const SuccessMessage = () => {
         horizontal: "center",
       }}
       open={isVisible}
-      autoHideDuration={6000}
+      autoHideDuration={4000}
       onClose={() => handleClose()}
       sx={{
         mt: {
