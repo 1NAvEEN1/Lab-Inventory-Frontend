@@ -33,7 +33,10 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import AttributeInput from "../../components/Attributes/AttributeInput";
-import { ATTRIBUTE_TYPES, requiresOptions } from "../../components/Attributes/types";
+import {
+  ATTRIBUTE_TYPES,
+  requiresOptions,
+} from "../../components/Attributes/types";
 import CategorySelector from "../../components/CategorySelector";
 import CategoriesService from "../../services/categoriesService";
 import ItemsService from "../../services/itemsService";
@@ -53,7 +56,7 @@ const mergeAttributes = (existing = [], incoming = []) => {
       ...(prev || {}),
       ...attr,
       options:
-        (attr.options && attr.options.length > 0)
+        attr.options && attr.options.length > 0
           ? attr.options
           : prev?.options || [],
     });
@@ -90,7 +93,11 @@ const AddItem = () => {
   const [fileDragOver, setFileDragOver] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [showErrorSnackbar, setShowErrorSnackbar] = useState(false);
-  const [previewDialog, setPreviewDialog] = useState({ open: false, url: "", type: "" });
+  const [previewDialog, setPreviewDialog] = useState({
+    open: false,
+    url: "",
+    type: "",
+  });
 
   const [itemAttributes, setItemAttributes] = useState([]);
   const [attributeValues, setAttributeValues] = useState({});
@@ -106,7 +113,7 @@ const AddItem = () => {
     const maxSize = 5 * 1024 * 1024; // 5MB in bytes
     const allowedTypes = [
       "image/jpeg",
-      "image/jpg", 
+      "image/jpg",
       "image/png",
       "image/gif",
       "image/webp",
@@ -135,77 +142,87 @@ const AddItem = () => {
 
   // Helper function to get file icon based on type
   const getFileIcon = (fileName) => {
-    const extension = fileName.toLowerCase().split('.').pop();
-    if (['pdf'].includes(extension)) {
-      return <PdfIcon sx={{ fontSize: 40, color: '#d32f2f' }} />;
+    const extension = fileName.toLowerCase().split(".").pop();
+    if (["pdf"].includes(extension)) {
+      return <PdfIcon sx={{ fontSize: 40, color: "#d32f2f" }} />;
     }
-    if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(extension)) {
-      return <VideoIcon sx={{ fontSize: 40, color: '#1976d2' }} />;
+    if (["mp4", "avi", "mov", "wmv", "flv", "webm"].includes(extension)) {
+      return <VideoIcon sx={{ fontSize: 40, color: "#1976d2" }} />;
     }
-    return <FileIcon sx={{ fontSize: 40, color: '#757575' }} />;
+    return <FileIcon sx={{ fontSize: 40, color: "#757575" }} />;
   };
 
   // Handle image file selection
-  const handleImageFileSelect = useCallback((files) => {
-    const newFiles = Array.from(files);
-    const totalCurrentCount = imageFiles.length + existingImages.length;
-    
-    if (totalCurrentCount + newFiles.length > 5) {
-      setUploadError(`You can upload maximum 5 images total. Currently you have ${totalCurrentCount} image(s).`);
-      setShowErrorSnackbar(true);
-      return;
-    }
+  const handleImageFileSelect = useCallback(
+    (files) => {
+      const newFiles = Array.from(files);
+      const totalCurrentCount = imageFiles.length + existingImages.length;
 
-    const validFiles = [];
-    let hasError = false;
-
-    for (const file of newFiles) {
-      const error = validateImageFile(file);
-      if (error) {
-        setUploadError(error);
+      if (totalCurrentCount + newFiles.length > 5) {
+        setUploadError(
+          `You can upload maximum 5 images total. Currently you have ${totalCurrentCount} image(s).`
+        );
         setShowErrorSnackbar(true);
-        hasError = true;
-        break;
+        return;
       }
-      validFiles.push(file);
-    }
 
-    if (!hasError && validFiles.length > 0) {
-      setImageFiles(prev => [...prev, ...validFiles]);
-      setUploadError("");
-    }
-  }, [imageFiles.length, existingImages.length, validateImageFile]);
+      const validFiles = [];
+      let hasError = false;
+
+      for (const file of newFiles) {
+        const error = validateImageFile(file);
+        if (error) {
+          setUploadError(error);
+          setShowErrorSnackbar(true);
+          hasError = true;
+          break;
+        }
+        validFiles.push(file);
+      }
+
+      if (!hasError && validFiles.length > 0) {
+        setImageFiles((prev) => [...prev, ...validFiles]);
+        setUploadError("");
+      }
+    },
+    [imageFiles.length, existingImages.length, validateImageFile]
+  );
 
   // Handle general file selection
-  const handleFileFileSelect = useCallback((files) => {
-    const newFiles = Array.from(files);
-    const totalCurrentCount = fileFiles.length + existingFiles.length;
-    
-    if (totalCurrentCount + newFiles.length > 5) {
-      setUploadError(`You can upload maximum 5 files total. Currently you have ${totalCurrentCount} file(s).`);
-      setShowErrorSnackbar(true);
-      return;
-    }
+  const handleFileFileSelect = useCallback(
+    (files) => {
+      const newFiles = Array.from(files);
+      const totalCurrentCount = fileFiles.length + existingFiles.length;
 
-    const validFiles = [];
-    let hasError = false;
-
-    for (const file of newFiles) {
-      const error = validateGeneralFile(file);
-      if (error) {
-        setUploadError(error);
+      if (totalCurrentCount + newFiles.length > 5) {
+        setUploadError(
+          `You can upload maximum 5 files total. Currently you have ${totalCurrentCount} file(s).`
+        );
         setShowErrorSnackbar(true);
-        hasError = true;
-        break;
+        return;
       }
-      validFiles.push(file);
-    }
 
-    if (!hasError && validFiles.length > 0) {
-      setFileFiles(prev => [...prev, ...validFiles]);
-      setUploadError("");
-    }
-  }, [fileFiles.length, existingFiles.length, validateGeneralFile]);
+      const validFiles = [];
+      let hasError = false;
+
+      for (const file of newFiles) {
+        const error = validateGeneralFile(file);
+        if (error) {
+          setUploadError(error);
+          setShowErrorSnackbar(true);
+          hasError = true;
+          break;
+        }
+        validFiles.push(file);
+      }
+
+      if (!hasError && validFiles.length > 0) {
+        setFileFiles((prev) => [...prev, ...validFiles]);
+        setUploadError("");
+      }
+    },
+    [fileFiles.length, existingFiles.length, validateGeneralFile]
+  );
 
   // Drag and drop handlers for images
   const handleImageDragOver = useCallback((e) => {
@@ -220,18 +237,21 @@ const AddItem = () => {
     setImageDragOver(false);
   }, []);
 
-  const handleImageDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setImageDragOver(false);
+  const handleImageDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setImageDragOver(false);
 
-    const files = Array.from(e.dataTransfer.files).filter(file => 
-      file.type.startsWith('image/')
-    );
-    if (files.length > 0) {
-      handleImageFileSelect(files);
-    }
-  }, [handleImageFileSelect]);
+      const files = Array.from(e.dataTransfer.files).filter((file) =>
+        file.type.startsWith("image/")
+      );
+      if (files.length > 0) {
+        handleImageFileSelect(files);
+      }
+    },
+    [handleImageFileSelect]
+  );
 
   // Drag and drop handlers for files
   const handleFileDragOver = useCallback((e) => {
@@ -246,65 +266,70 @@ const AddItem = () => {
     setFileDragOver(false);
   }, []);
 
-  const handleFileDrop = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setFileDragOver(false);
+  const handleFileDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setFileDragOver(false);
 
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      handleFileFileSelect(files);
-    }
-  }, [handleFileFileSelect]);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        handleFileFileSelect(files);
+      }
+    },
+    [handleFileFileSelect]
+  );
 
   // Remove file functions
   const removeImageFile = useCallback((index) => {
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   const removeFileFile = useCallback((index) => {
-    setFileFiles(prev => prev.filter((_, i) => i !== index));
+    setFileFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   const removeExistingImage = useCallback((index) => {
-    setExistingImages(prev => prev.filter((_, i) => i !== index));
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   const removeExistingFile = useCallback((index) => {
-    setExistingFiles(prev => prev.filter((_, i) => i !== index));
+    setExistingFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   // Preview functions
   const previewFile = useCallback((file) => {
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith("image/")) {
       const url = URL.createObjectURL(file);
-      setPreviewDialog({ open: true, url, type: 'image' });
-    } else if (file.type === 'application/pdf') {
+      setPreviewDialog({ open: true, url, type: "image" });
+    } else if (file.type === "application/pdf") {
       const url = URL.createObjectURL(file);
-      setPreviewDialog({ open: true, url, type: 'pdf' });
-    } else if (file.type.startsWith('video/')) {
+      setPreviewDialog({ open: true, url, type: "pdf" });
+    } else if (file.type.startsWith("video/")) {
       const url = URL.createObjectURL(file);
-      setPreviewDialog({ open: true, url, type: 'video' });
+      setPreviewDialog({ open: true, url, type: "video" });
     }
   }, []);
 
   // Preview existing files (from URL)
-  const previewExistingFile = useCallback((fileName, folder = 'items') => {
+  const previewExistingFile = useCallback((fileName, folder = "items") => {
     const url = FilesService.getImageUrl(folder, fileName);
-    const extension = fileName.toLowerCase().split('.').pop();
-    
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
-      setPreviewDialog({ open: true, url, type: 'image' });
-    } else if (extension === 'pdf') {
-      setPreviewDialog({ open: true, url, type: 'pdf' });
-    } else if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(extension)) {
-      setPreviewDialog({ open: true, url, type: 'video' });
+    const extension = fileName.toLowerCase().split(".").pop();
+
+    if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
+      setPreviewDialog({ open: true, url, type: "image" });
+    } else if (extension === "pdf") {
+      setPreviewDialog({ open: true, url, type: "pdf" });
+    } else if (
+      ["mp4", "avi", "mov", "wmv", "flv", "webm"].includes(extension)
+    ) {
+      setPreviewDialog({ open: true, url, type: "video" });
     }
   }, []);
 
   const closePreview = useCallback(() => {
     // Only revoke blob URLs (newly uploaded files), not server URLs
-    if (previewDialog.url && previewDialog.url.startsWith('blob:')) {
+    if (previewDialog.url && previewDialog.url.startsWith("blob:")) {
       URL.revokeObjectURL(previewDialog.url);
     }
     setPreviewDialog({ open: false, url: "", type: "" });
@@ -314,17 +339,17 @@ const AddItem = () => {
   useEffect(() => {
     return () => {
       // Cleanup any remaining blob URLs
-      imageFiles.forEach(file => {
-        if (file.url && file.url.startsWith('blob:')) {
+      imageFiles.forEach((file) => {
+        if (file.url && file.url.startsWith("blob:")) {
           URL.revokeObjectURL(file.url);
         }
       });
-      fileFiles.forEach(file => {
-        if (file.url && file.url.startsWith('blob:')) {
+      fileFiles.forEach((file) => {
+        if (file.url && file.url.startsWith("blob:")) {
           URL.revokeObjectURL(file.url);
         }
       });
-      if (previewDialog.url && previewDialog.url.startsWith('blob:')) {
+      if (previewDialog.url && previewDialog.url.startsWith("blob:")) {
         URL.revokeObjectURL(previewDialog.url);
       }
     };
@@ -346,7 +371,7 @@ const AddItem = () => {
       setSku(item.sku || "");
       setDescription(item.description || "");
       setSelectedCategoryId(item.categoryId || "");
-      
+
       // Handle attribute definitions and values from API
       if (item.otherAttributes && Array.isArray(item.otherAttributes)) {
         const attrs = {};
@@ -363,16 +388,15 @@ const AddItem = () => {
         setItemAttributes((prev) => mergeAttributes(prev, definitions));
         setAttributeValues((prev) => ({ ...prev, ...attrs }));
       }
-      
+
       // Set existing images and files for viewing
       if (item.images && Array.isArray(item.images)) {
         setExistingImages(item.images);
       }
-      
+
       if (item.files && Array.isArray(item.files)) {
         setExistingFiles(item.files);
       }
-      
     } catch (err) {
       showAlertMessage({ message: "Failed to fetch item", type: "error" });
       console.error("Error fetching item:", err);
@@ -454,9 +478,7 @@ const AddItem = () => {
 
   const handleRemoveAttribute = (index) => {
     const attrToRemove = combinedAttributes[index];
-    setItemAttributes((prev) =>
-      prev.filter((_, i) => i !== index)
-    );
+    setItemAttributes((prev) => prev.filter((_, i) => i !== index));
     // Optionally clear the value for this attribute
     setAttributeValues((prev) => {
       const next = { ...prev };
@@ -466,8 +488,10 @@ const AddItem = () => {
   };
 
   const uploadMany = async (files, folder = "items") => {
-    const uploads = Array.from(files || []).map((f) => 
-      FilesService.uploadFile(f, folder).then((r) => r.data?.fileName || r.data?.url || r.data?.path || r.data)
+    const uploads = Array.from(files || []).map((f) =>
+      FilesService.uploadFile(f, folder).then(
+        (r) => r.data?.fileName || r.data?.url || r.data?.path || r.data
+      )
     );
     return Promise.all(uploads);
   };
@@ -475,8 +499,10 @@ const AddItem = () => {
   const handleSave = async () => {
     try {
       // Only upload new files if there are any
-      const newImageUrls = imageFiles.length > 0 ? await uploadMany(imageFiles) : [];
-      const newFileUrls = fileFiles.length > 0 ? await uploadMany(fileFiles) : [];
+      const newImageUrls =
+        imageFiles.length > 0 ? await uploadMany(imageFiles) : [];
+      const newFileUrls =
+        fileFiles.length > 0 ? await uploadMany(fileFiles) : [];
 
       // Map all item attributes (category + custom), preserving the values from attributeValues
       const attributesPayload = combinedAttributes.map((a) => ({
@@ -501,17 +527,23 @@ const AddItem = () => {
 
       if (editId) {
         await ItemsService.update(editId, payload);
-        showAlertMessage({ message: "Item updated successfully", type: "success" });
+        showAlertMessage({
+          message: "Item updated successfully",
+          type: "success",
+        });
       } else {
         await ItemsService.save(payload);
-        showAlertMessage({ message: "Item created successfully", type: "success" });
+        showAlertMessage({
+          message: "Item created successfully",
+          type: "success",
+        });
       }
 
       navigate("/inventory/items");
     } catch (e) {
-      showAlertMessage({ 
-        message: editId ? "Failed to update item" : "Failed to create item", 
-        type: "error" 
+      showAlertMessage({
+        message: editId ? "Failed to update item" : "Failed to create item",
+        type: "error",
       });
       console.error("Save error:", e);
     }
@@ -528,7 +560,10 @@ const AddItem = () => {
 
     try {
       await ItemsService.delete(viewId);
-      showAlertMessage({ message: "Item deleted successfully", type: "success" });
+      showAlertMessage({
+        message: "Item deleted successfully",
+        type: "success",
+      });
       navigate("/inventory/items");
     } catch (err) {
       showAlertMessage({ message: "Failed to delete item", type: "error" });
@@ -554,11 +589,7 @@ const AddItem = () => {
           Back
         </Button>
         <Typography variant="h6" gutterBottom>
-          {isViewMode
-            ? "View Item"
-            : isEditMode
-            ? "Edit Item"
-            : "Create Item"}
+          {isViewMode ? "View Item" : isEditMode ? "Edit Item" : "Create Item"}
         </Typography>
         {isViewMode && (
           <Stack direction="row" spacing={1}>
@@ -583,9 +614,9 @@ const AddItem = () => {
         )}
         {!isViewMode && <div></div>}
       </Stack>
-      
+
       <Divider sx={{ mb: 2 }} />
-      
+
       <Box display={"flex"} justifyContent={"center"}>
         <Box width={"700px"}>
           <Box sx={{ mb: 3, maxWidth: "700px" }}>
@@ -638,18 +669,30 @@ const AddItem = () => {
               </Box>
 
               <Box>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                  <Typography>Images {!isViewMode && '(Max 5 images, 5MB each)'}</Typography>
-                  {!isViewMode && (imageFiles.length + existingImages.length) > 0 && (
-                    <Chip 
-                      label={`${imageFiles.length + existingImages.length}/5`} 
-                      size="small" 
-                      color={(imageFiles.length + existingImages.length) >= 5 ? "error" : "primary"}
-                      variant="outlined"
-                    />
-                  )}
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mb: 0.5 }}
+                >
+                  <Typography>
+                    Images {!isViewMode && "(Max 5 images, 5MB each)"}
+                  </Typography>
+                  {!isViewMode &&
+                    imageFiles.length + existingImages.length > 0 && (
+                      <Chip
+                        label={`${imageFiles.length + existingImages.length}/5`}
+                        size="small"
+                        color={
+                          imageFiles.length + existingImages.length >= 5
+                            ? "error"
+                            : "primary"
+                        }
+                        variant="outlined"
+                      />
+                    )}
                 </Stack>
-                
+
                 {/* Upload Area - Only show in create/edit mode */}
                 {!isViewMode && (
                   <Box
@@ -657,35 +700,49 @@ const AddItem = () => {
                     onDragLeave={handleImageDragLeave}
                     onDrop={handleImageDrop}
                     sx={{
-                      border: imageDragOver ? `2px dashed #1976d2` : `2px dashed #ccc`,
+                      border: imageDragOver
+                        ? `2px dashed #1976d2`
+                        : `2px dashed #ccc`,
                       borderRadius: 2,
                       p: 2,
                       mb: 2,
-                      textAlign: 'center',
-                      backgroundColor: imageDragOver ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                      textAlign: "center",
+                      backgroundColor: imageDragOver
+                        ? "rgba(25, 118, 210, 0.04)"
+                        : "transparent",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        borderColor: "primary.main",
+                        backgroundColor: "rgba(25, 118, 210, 0.04)",
                       },
                     }}
                   >
-                    <CloudUploadIcon sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {(imageFiles.length + existingImages.length) >= 5 
-                        ? 'Maximum image limit reached (5/5)'
-                        : 'Drag and drop images here, or click to browse'}
+                    <CloudUploadIcon
+                      sx={{ fontSize: 40, color: "grey.500", mb: 1 }}
+                    />
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
+                      {imageFiles.length + existingImages.length >= 5
+                        ? "Maximum image limit reached (5/5)"
+                        : "Drag and drop images here, or click to browse"}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                      {(imageFiles.length + existingImages.length) >= 5 
-                        ? 'Remove existing images to upload new ones'
-                        : 'Supported formats: JPEG, PNG, GIF, WebP (Max 5MB each)'}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 2 }}
+                    >
+                      {imageFiles.length + existingImages.length >= 5
+                        ? "Remove existing images to upload new ones"
+                        : "Supported formats: JPEG, PNG, GIF, WebP (Max 5MB each)"}
                     </Typography>
                     <Button
                       variant="outlined"
                       component="label"
                       size="small"
-                      disabled={(imageFiles.length + existingImages.length) >= 5}
+                      disabled={imageFiles.length + existingImages.length >= 5}
                       startIcon={<CloudUploadIcon />}
                     >
                       Upload Images
@@ -694,7 +751,7 @@ const AddItem = () => {
                         accept="image/*"
                         multiple
                         onChange={(e) => handleImageFileSelect(e.target.files)}
-                        style={{ display: 'none' }}
+                        style={{ display: "none" }}
                       />
                     </Button>
                   </Box>
@@ -702,7 +759,11 @@ const AddItem = () => {
 
                 {/* No images message in view mode */}
                 {isViewMode && existingImages.length === 0 && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2, fontStyle: "italic" }}
+                  >
                     No images uploaded
                   </Typography>
                 )}
@@ -713,15 +774,15 @@ const AddItem = () => {
                     {/* Existing Images (for view/edit mode) */}
                     {existingImages.map((imageUrl, index) => (
                       <Grid item key={`existing-${index}`} xs={6} sm={4} md={3}>
-                        <Card sx={{ position: 'relative' }}>
+                        <Card sx={{ position: "relative" }}>
                           <CardMedia
                             component="img"
                             height="120"
                             image={FilesService.getImageUrl("items", imageUrl)}
                             alt={`Existing image ${index + 1}`}
-                            sx={{ objectFit: 'cover' }}
+                            sx={{ objectFit: "cover" }}
                           />
-                          <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                          <CardContent sx={{ p: 1, "&:last-child": { pb: 1 } }}>
                             <Typography variant="caption" noWrap>
                               Existing Image {index + 1}
                             </Typography>
@@ -731,12 +792,14 @@ const AddItem = () => {
                               size="small"
                               onClick={() => removeExistingImage(index)}
                               sx={{
-                                position: 'absolute',
+                                position: "absolute",
                                 top: 4,
                                 right: 4,
-                                backgroundColor: 'rgba(244, 67, 54, 0.8)',
-                                color: 'white',
-                                '&:hover': { backgroundColor: 'rgba(244, 67, 54, 1)' },
+                                backgroundColor: "rgba(244, 67, 54, 0.8)",
+                                color: "white",
+                                "&:hover": {
+                                  backgroundColor: "rgba(244, 67, 54, 1)",
+                                },
                               }}
                             >
                               <CloseIcon fontSize="small" />
@@ -744,14 +807,16 @@ const AddItem = () => {
                           )}
                           <IconButton
                             size="small"
-                            onClick={() => previewExistingFile(imageUrl, 'items')}
+                            onClick={() =>
+                              previewExistingFile(imageUrl, "items")
+                            }
                             sx={{
-                              position: 'absolute',
+                              position: "absolute",
                               top: 4,
                               right: isEditMode ? 40 : 4,
-                              backgroundColor: 'rgba(0,0,0,0.7)',
-                              color: 'white',
-                              '&:hover': { backgroundColor: 'rgba(0,0,0,0.8)' },
+                              backgroundColor: "rgba(0,0,0,0.7)",
+                              color: "white",
+                              "&:hover": { backgroundColor: "rgba(0,0,0,0.8)" },
                             }}
                           >
                             <VisibilityIcon fontSize="small" />
@@ -759,23 +824,31 @@ const AddItem = () => {
                         </Card>
                       </Grid>
                     ))}
-                    
+
                     {/* New Images */}
                     {imageFiles.map((file, index) => (
                       <Grid item key={`new-${index}`} xs={6} sm={4} md={3}>
-                        <Card sx={{ position: 'relative' }}>
+                        <Card sx={{ position: "relative" }}>
                           <CardMedia
                             component="img"
                             height="120"
                             image={URL.createObjectURL(file)}
                             alt={file.name}
-                            sx={{ objectFit: 'cover' }}
+                            sx={{ objectFit: "cover" }}
                           />
-                          <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                            <Typography variant="caption" noWrap title={file.name}>
+                          <CardContent sx={{ p: 1, "&:last-child": { pb: 1 } }}>
+                            <Typography
+                              variant="caption"
+                              noWrap
+                              title={file.name}
+                            >
                               {file.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: "block" }}
+                            >
                               {(file.size / 1024 / 1024).toFixed(2)} MB
                             </Typography>
                           </CardContent>
@@ -784,12 +857,14 @@ const AddItem = () => {
                               size="small"
                               onClick={() => removeImageFile(index)}
                               sx={{
-                                position: 'absolute',
+                                position: "absolute",
                                 top: 4,
                                 right: 4,
-                                backgroundColor: 'rgba(244, 67, 54, 0.8)',
-                                color: 'white',
-                                '&:hover': { backgroundColor: 'rgba(244, 67, 54, 1)' },
+                                backgroundColor: "rgba(244, 67, 54, 0.8)",
+                                color: "white",
+                                "&:hover": {
+                                  backgroundColor: "rgba(244, 67, 54, 1)",
+                                },
                               }}
                             >
                               <CloseIcon fontSize="small" />
@@ -799,12 +874,12 @@ const AddItem = () => {
                             size="small"
                             onClick={() => previewFile(file)}
                             sx={{
-                              position: 'absolute',
+                              position: "absolute",
                               top: 4,
                               left: 4,
-                              backgroundColor: 'rgba(0,0,0,0.7)',
-                              color: 'white',
-                              '&:hover': { backgroundColor: 'rgba(0,0,0,0.8)' },
+                              backgroundColor: "rgba(0,0,0,0.7)",
+                              color: "white",
+                              "&:hover": { backgroundColor: "rgba(0,0,0,0.8)" },
                             }}
                           >
                             <VisibilityIcon fontSize="small" />
@@ -817,18 +892,30 @@ const AddItem = () => {
               </Box>
 
               <Box>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                  <Typography>Files {!isViewMode && '(Max 5 files, 5MB each)'}</Typography>
-                  {!isViewMode && (fileFiles.length + existingFiles.length) > 0 && (
-                    <Chip 
-                      label={`${fileFiles.length + existingFiles.length}/5`} 
-                      size="small" 
-                      color={(fileFiles.length + existingFiles.length) >= 5 ? "error" : "primary"}
-                      variant="outlined"
-                    />
-                  )}
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mb: 0.5 }}
+                >
+                  <Typography>
+                    Files {!isViewMode && "(Max 5 files, 5MB each)"}
+                  </Typography>
+                  {!isViewMode &&
+                    fileFiles.length + existingFiles.length > 0 && (
+                      <Chip
+                        label={`${fileFiles.length + existingFiles.length}/5`}
+                        size="small"
+                        color={
+                          fileFiles.length + existingFiles.length >= 5
+                            ? "error"
+                            : "primary"
+                        }
+                        variant="outlined"
+                      />
+                    )}
                 </Stack>
-                
+
                 {/* Upload Area - Only show in create/edit mode */}
                 {!isViewMode && (
                   <Box
@@ -836,35 +923,47 @@ const AddItem = () => {
                     onDragLeave={handleFileDragLeave}
                     onDrop={handleFileDrop}
                     sx={{
-                      border: fileDragOver ? `2px dashed #1976d2` : `2px dashed #ccc`,
+                      border: fileDragOver
+                        ? `2px dashed #1976d2`
+                        : `2px dashed #ccc`,
                       borderRadius: 2,
                       p: 2,
                       mb: 2,
-                      textAlign: 'center',
-                      backgroundColor: fileDragOver ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                      textAlign: "center",
+                      backgroundColor: fileDragOver
+                        ? "rgba(25, 118, 210, 0.04)"
+                        : "transparent",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        borderColor: "primary.main",
+                        backgroundColor: "rgba(25, 118, 210, 0.04)",
                       },
                     }}
                   >
-                    <FileIcon sx={{ fontSize: 40, color: 'grey.500', mb: 1 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {(fileFiles.length + existingFiles.length) >= 5 
-                        ? 'Maximum file limit reached (5/5)'
-                        : 'Drag and drop files here, or click to browse'}
+                    <FileIcon sx={{ fontSize: 40, color: "grey.500", mb: 1 }} />
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
+                      {fileFiles.length + existingFiles.length >= 5
+                        ? "Maximum file limit reached (5/5)"
+                        : "Drag and drop files here, or click to browse"}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                      {(fileFiles.length + existingFiles.length) >= 5 
-                        ? 'Remove existing files to upload new ones'
-                        : 'Any file type supported (Max 5MB each)'}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mb: 2 }}
+                    >
+                      {fileFiles.length + existingFiles.length >= 5
+                        ? "Remove existing files to upload new ones"
+                        : "Any file type supported (Max 5MB each)"}
                     </Typography>
                     <Button
                       variant="outlined"
                       component="label"
                       size="small"
-                      disabled={(fileFiles.length + existingFiles.length) >= 5}
+                      disabled={fileFiles.length + existingFiles.length >= 5}
                       startIcon={<CloudUploadIcon />}
                     >
                       Upload Files
@@ -872,7 +971,7 @@ const AddItem = () => {
                         type="file"
                         multiple
                         onChange={(e) => handleFileFileSelect(e.target.files)}
-                        style={{ display: 'none' }}
+                        style={{ display: "none" }}
                       />
                     </Button>
                   </Box>
@@ -880,7 +979,11 @@ const AddItem = () => {
 
                 {/* No files message in view mode */}
                 {isViewMode && existingFiles.length === 0 && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2, fontStyle: "italic" }}
+                  >
                     No files uploaded
                   </Typography>
                 )}
@@ -890,16 +993,32 @@ const AddItem = () => {
                   <Grid container spacing={2} sx={{ mb: 2 }}>
                     {/* Existing Files (for view/edit mode) */}
                     {existingFiles.map((fileUrl, index) => {
-                      const fileName = fileUrl.split('/').pop() || `File ${index + 1}`;
+                      const fileName =
+                        fileUrl.split("/").pop() || `File ${index + 1}`;
                       return (
-                        <Grid item key={`existing-file-${index}`} xs={6} sm={4} md={3}>
-                          <Card sx={{ position: 'relative', minHeight: 140 }}>
-                            <CardContent sx={{ textAlign: 'center', p: 2 }}>
+                        <Grid
+                          item
+                          key={`existing-file-${index}`}
+                          xs={6}
+                          sm={4}
+                          md={3}
+                        >
+                          <Card sx={{ position: "relative", minHeight: 140 }}>
+                            <CardContent sx={{ textAlign: "center", p: 2 }}>
                               {getFileIcon(fileName)}
-                              <Typography variant="caption" sx={{ display: 'block', mt: 1 }} noWrap title={fileName}>
+                              <Typography
+                                variant="caption"
+                                sx={{ display: "block", mt: 1 }}
+                                noWrap
+                                title={fileName}
+                              >
                                 {fileName}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: "block" }}
+                              >
                                 Existing File
                               </Typography>
                             </CardContent>
@@ -908,12 +1027,14 @@ const AddItem = () => {
                                 size="small"
                                 onClick={() => removeExistingFile(index)}
                                 sx={{
-                                  position: 'absolute',
+                                  position: "absolute",
                                   top: 4,
                                   right: 4,
-                                  backgroundColor: 'rgba(244, 67, 54, 0.8)',
-                                  color: 'white',
-                                  '&:hover': { backgroundColor: 'rgba(244, 67, 54, 1)' },
+                                  backgroundColor: "rgba(244, 67, 54, 0.8)",
+                                  color: "white",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(244, 67, 54, 1)",
+                                  },
                                 }}
                               >
                                 <CloseIcon fontSize="small" />
@@ -921,14 +1042,18 @@ const AddItem = () => {
                             )}
                             <IconButton
                               size="small"
-                              onClick={() => previewExistingFile(fileUrl, 'items')}
+                              onClick={() =>
+                                previewExistingFile(fileUrl, "items")
+                              }
                               sx={{
-                                position: 'absolute',
+                                position: "absolute",
                                 top: 4,
                                 right: isEditMode ? 40 : 4,
-                                backgroundColor: 'rgba(0,0,0,0.7)',
-                                color: 'white',
-                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.8)' },
+                                backgroundColor: "rgba(0,0,0,0.7)",
+                                color: "white",
+                                "&:hover": {
+                                  backgroundColor: "rgba(0,0,0,0.8)",
+                                },
                               }}
                             >
                               <VisibilityIcon fontSize="small" />
@@ -937,17 +1062,26 @@ const AddItem = () => {
                         </Grid>
                       );
                     })}
-                    
+
                     {/* New Files */}
                     {fileFiles.map((file, index) => (
                       <Grid item key={`new-file-${index}`} xs={6} sm={4} md={3}>
-                        <Card sx={{ position: 'relative', minHeight: 140 }}>
-                          <CardContent sx={{ textAlign: 'center', p: 2 }}>
+                        <Card sx={{ position: "relative", minHeight: 140 }}>
+                          <CardContent sx={{ textAlign: "center", p: 2 }}>
                             {getFileIcon(file.name)}
-                            <Typography variant="caption" sx={{ display: 'block', mt: 1 }} noWrap title={file.name}>
+                            <Typography
+                              variant="caption"
+                              sx={{ display: "block", mt: 1 }}
+                              noWrap
+                              title={file.name}
+                            >
                               {file.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: "block" }}
+                            >
                               {(file.size / 1024 / 1024).toFixed(2)} MB
                             </Typography>
                           </CardContent>
@@ -956,28 +1090,34 @@ const AddItem = () => {
                               size="small"
                               onClick={() => removeFileFile(index)}
                               sx={{
-                                position: 'absolute',
+                                position: "absolute",
                                 top: 4,
                                 right: 4,
-                                backgroundColor: 'rgba(244, 67, 54, 0.8)',
-                                color: 'white',
-                                '&:hover': { backgroundColor: 'rgba(244, 67, 54, 1)' },
+                                backgroundColor: "rgba(244, 67, 54, 0.8)",
+                                color: "white",
+                                "&:hover": {
+                                  backgroundColor: "rgba(244, 67, 54, 1)",
+                                },
                               }}
                             >
                               <CloseIcon fontSize="small" />
                             </IconButton>
                           )}
-                          {(file.type.startsWith('image/') || file.type === 'application/pdf' || file.type.startsWith('video/')) && (
+                          {(file.type.startsWith("image/") ||
+                            file.type === "application/pdf" ||
+                            file.type.startsWith("video/")) && (
                             <IconButton
                               size="small"
                               onClick={() => previewFile(file)}
                               sx={{
-                                position: 'absolute',
+                                position: "absolute",
                                 top: 4,
                                 left: 4,
-                                backgroundColor: 'rgba(0,0,0,0.7)',
-                                color: 'white',
-                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.8)' },
+                                backgroundColor: "rgba(0,0,0,0.7)",
+                                color: "white",
+                                "&:hover": {
+                                  backgroundColor: "rgba(0,0,0,0.8)",
+                                },
                               }}
                             >
                               <VisibilityIcon fontSize="small" />
@@ -1001,28 +1141,16 @@ const AddItem = () => {
                 sx={{ mb: 2, gap: 1 }}
               >
                 <Box>
-                  <Typography variant="h6">
-                    Attributes
-                  </Typography>
+                  <Typography variant="h6">Attributes</Typography>
                   {selectedCategory?.name && (
                     <Typography variant="caption" color="text.secondary">
                       Current category: {selectedCategory.name}
                     </Typography>
                   )}
                 </Box>
-                {!isViewMode && (
-                  <Button
-                    startIcon={<AddIcon />}
-                    variant="outlined"
-                    size="small"
-                    onClick={handleOpenAttrDialog}
-                  >
-                    Add Attribute
-                  </Button>
-                )}
               </Stack>
 
-              <Divider sx={{ mb: 2 }} />
+              <Divider />
 
               {combinedAttributes.length === 0 && (
                 <Typography variant="body2" color="text.secondary">
@@ -1035,12 +1163,14 @@ const AddItem = () => {
                   <Box key={attr.label + attr.type}>
                     {index > 0 && <Divider />}
                     <Box sx={{ borderColor: "divider", p: 1 }}>
-                      <Stack direction="row" spacing={1} alignItems="flex-start">
+                      <Stack direction="row" spacing={1} alignItems="center">
                         <Box sx={{ flex: 1 }}>
                           <AttributeInput
                             attribute={attr}
                             value={attributeValues[attr.label]}
-                            onChange={(val) => handleAttrChange(attr.label, val)}
+                            onChange={(val) =>
+                              handleAttrChange(attr.label, val)
+                            }
                             disabled={isViewMode}
                           />
                         </Box>
@@ -1059,6 +1189,21 @@ const AddItem = () => {
                   </Box>
                 ))}
               </Stack>
+              {!isViewMode && (
+                <>
+                  <Divider sx={{ mt: 2, mb: 2 }} />
+                  <Box display={"flex"} justifyContent={"end"}>
+                    <Button
+                      startIcon={<AddIcon />}
+                      variant="outlined"
+                      size="small"
+                      onClick={handleOpenAttrDialog}
+                    >
+                      Add Attribute
+                    </Button>
+                  </Box>
+                </>
+              )}
             </Box>
           )}
 
@@ -1116,7 +1261,7 @@ const AddItem = () => {
           </Stack>
         </Box>
       </Box>
-      
+
       <Dialog
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -1151,7 +1296,9 @@ const AddItem = () => {
                 <Typography variant="caption" color="text.secondary">
                   {a.label}
                 </Typography>
-                <Typography variant="body2">{String(attributeValues[a.label] ?? "—")}</Typography>
+                <Typography variant="body2">
+                  {String(attributeValues[a.label] ?? "—")}
+                </Typography>
               </Box>
             ))}
           </Stack>
@@ -1189,7 +1336,9 @@ const AddItem = () => {
               select
               label="Data Type"
               value={attrForm.type}
-              onChange={(e) => setAttrForm((prev) => ({ ...prev, type: e.target.value }))}
+              onChange={(e) =>
+                setAttrForm((prev) => ({ ...prev, type: e.target.value }))
+              }
               fullWidth
               size="small"
             >
@@ -1210,12 +1359,7 @@ const AddItem = () => {
                   size="small"
                   helperText="Used for dropdown and radio"
                 />
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  mt={1}
-                  flexWrap="wrap"
-                >
+                <Stack direction="row" spacing={1} mt={1} flexWrap="wrap">
                   {attrOptionsText
                     .split(",")
                     .map((opt) => opt.trim())
@@ -1232,7 +1376,11 @@ const AddItem = () => {
           <Button onClick={() => setAttrDialogOpen(false)} size="small">
             Cancel
           </Button>
-          <Button onClick={handleSaveAttributeDefinition} variant="contained" size="small">
+          <Button
+            onClick={handleSaveAttributeDefinition}
+            variant="contained"
+            size="small"
+          >
             Save Attribute
           </Button>
         </DialogActions>

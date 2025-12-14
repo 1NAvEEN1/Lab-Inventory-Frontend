@@ -76,6 +76,38 @@ const emptyAttribute = () => ({
   options: [],
 });
 
+const mergeAttributes = (base = [], incoming = []) => {
+  const map = new Map();
+
+  base.forEach((attr) => {
+    map.set(attr.label, attr);
+  });
+
+  incoming.forEach((attr) => {
+    const prev = map.get(attr.label);
+    map.set(attr.label, {
+      ...(prev || {}),
+      ...attr,
+      options:
+        (attr.options && attr.options.length > 0)
+          ? attr.options
+          : prev?.options || [],
+    });
+  });
+
+  return Array.from(map.values());
+};
+
+const buildOptionsTextMap = (attrs = []) => {
+  const next = {};
+  attrs.forEach((attr, index) => {
+    if (attr.options && attr.options.length > 0) {
+      next[index] = attr.options.join(", ");
+    }
+  });
+  return next;
+};
+
 const AddCategory = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -114,6 +146,24 @@ const AddCategory = () => {
       fetchCategory(categoryId);
     }
   }, [viewId, editId]);
+
+  // Inherit attributes from parent category when selected
+  useEffect(() => {
+    if (!parentCategoryId) return;
+
+    CategoriesService.getById(parentCategoryId)
+      .then(({ data }) => {
+        const parentAttrs = data?.attributes || [];
+        setAttributes((prev) => {
+          const merged = mergeAttributes(parentAttrs, prev);
+          setOptionsInputText(buildOptionsTextMap(merged));
+          return merged;
+        });
+      })
+      .catch(() => {
+        // Swallow errors to avoid blocking user input; parent attributes just won't merge
+      });
+  }, [parentCategoryId]);
 
   // Set parent category when parent parameter is provided
   useEffect(() => {
