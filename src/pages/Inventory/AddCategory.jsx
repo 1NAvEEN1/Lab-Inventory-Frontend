@@ -104,6 +104,9 @@ const AddCategory = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // Separate state for options input text
+  const [optionsInputText, setOptionsInputText] = useState({});
 
   useEffect(() => {
     const categoryId = viewId || editId;
@@ -134,12 +137,9 @@ const AddCategory = () => {
 
       // Handle both array and object formats for attributes
       const categoryAttributes = category.attributes || [];
+      let attrs = [];
       if (Array.isArray(categoryAttributes)) {
-        setAttributes(
-          categoryAttributes.length > 0
-            ? categoryAttributes
-            : [emptyAttribute()]
-        );
+        attrs = categoryAttributes.length > 0 ? categoryAttributes : [emptyAttribute()];
       } else {
         // Convert object to array format
         const attributesArray = Object.keys(categoryAttributes).map((key) => ({
@@ -147,10 +147,18 @@ const AddCategory = () => {
           type: "text", // Default type
           options: [],
         }));
-        setAttributes(
-          attributesArray.length > 0 ? attributesArray : [emptyAttribute()]
-        );
+        attrs = attributesArray.length > 0 ? attributesArray : [emptyAttribute()];
       }
+      setAttributes(attrs);
+      
+      // Initialize options input text for attributes with options
+      const initialOptionsText = {};
+      attrs.forEach((attr, index) => {
+        if (attr.options && attr.options.length > 0) {
+          initialOptionsText[index] = attr.options.join(", ");
+        }
+      });
+      setOptionsInputText(initialOptionsText);
     } catch (err) {
       showAlertMessage({ message: "Failed to fetch category", type: "error" });
       console.error("Error fetching category:", err);
@@ -159,12 +167,28 @@ const AddCategory = () => {
 
   const handleAddAttribute = () =>
     setAttributes((prev) => [...prev, emptyAttribute()]);
-  const handleRemoveAttribute = (index) =>
+  const handleRemoveAttribute = (index) => {
     setAttributes((prev) => prev.filter((_, i) => i !== index));
+    // Clean up options input text for this index
+    setOptionsInputText((prev) => {
+      const newState = { ...prev };
+      delete newState[index];
+      return newState;
+    });
+  };
   const handleAttrChange = (index, patch) =>
     setAttributes((prev) =>
       prev.map((a, i) => (i === index ? { ...a, ...patch } : a))
     );
+  
+  const handleOptionsTextChange = (index, text) => {
+    setOptionsInputText((prev) => ({ ...prev, [index]: text }));
+    const options = text
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    handleAttrChange(index, { options });
+  };
 
   const preparedAttributes = useMemo(
     () =>
@@ -670,19 +694,21 @@ const AddCategory = () => {
                         </Typography>
                         <TextField
                           placeholder="Enter options separated by commas"
-                          value={(attr.options || []).join(", ")}
-                          onChange={(e) =>
-                            handleAttrChange(index, {
-                              options: e.target.value
-                                .split(",")
-                                .map((x) => x.trim())
-                                .filter(Boolean),
-                            })
+                          value={
+                            optionsInputText[index] !== undefined
+                              ? optionsInputText[index]
+                              : (attr.options || []).join(", ")
                           }
+                          onChange={(e) => handleOptionsTextChange(index, e.target.value)}
                           fullWidth
                           size="small"
                           helperText="Used for dropdown and radio"
                           disabled={isViewMode}
+                          InputProps={{
+                            onKeyDown: (e) => e.stopPropagation(),
+                            onKeyPress: (e) => e.stopPropagation(),
+                            onKeyUp: (e) => e.stopPropagation(),
+                          }}
                         />
                         <Stack
                           direction="row"
