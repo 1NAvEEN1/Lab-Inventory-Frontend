@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Button,
@@ -7,6 +7,7 @@ import {
   TextField,
   Typography,
   Chip,
+  MenuItem,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -22,6 +23,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Add as AddIcon,
   CloudUpload as CloudUploadIcon,
   InsertDriveFile as FileIcon,
   PictureAsPdf as PdfIcon,
@@ -31,12 +33,34 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import AttributeInput from "../../components/Attributes/AttributeInput";
+import { ATTRIBUTE_TYPES, requiresOptions } from "../../components/Attributes/types";
 import CategorySelector from "../../components/CategorySelector";
 import CategoriesService from "../../services/categoriesService";
 import ItemsService from "../../services/itemsService";
 import FilesService from "../../services/filesService";
 import { showAlertMessage } from "../../app/alertMessageController";
 import FilePreviewDialog from "../../components/FilePreviewDialog";
+
+const mergeAttributes = (existing = [], incoming = []) => {
+  const map = new Map();
+  existing.forEach((attr) => {
+    map.set(attr.label, attr);
+  });
+
+  incoming.forEach((attr) => {
+    const prev = map.get(attr.label);
+    map.set(attr.label, {
+      ...(prev || {}),
+      ...attr,
+      options:
+        (attr.options && attr.options.length > 0)
+          ? attr.options
+          : prev?.options || [],
+    });
+  });
+
+  return Array.from(map.values());
+};
 
 const AddItem = () => {
   const navigate = useNavigate();
@@ -68,8 +92,14 @@ const AddItem = () => {
   const [showErrorSnackbar, setShowErrorSnackbar] = useState(false);
   const [previewDialog, setPreviewDialog] = useState({ open: false, url: "", type: "" });
 
+  const [itemAttributes, setItemAttributes] = useState([]);
   const [attributeValues, setAttributeValues] = useState({});
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  const [attrDialogOpen, setAttrDialogOpen] = useState(false);
+  const [attrForm, setAttrForm] = useState({ label: "", type: "text" });
+  const [attrOptionsText, setAttrOptionsText] = useState("");
+  const [attrFormError, setAttrFormError] = useState("");
 
   // File validation functions
   const validateImageFile = useCallback((file) => {
@@ -317,13 +347,21 @@ const AddItem = () => {
       setDescription(item.description || "");
       setSelectedCategoryId(item.categoryId || "");
       
-      // Handle attribute values
+      // Handle attribute definitions and values from API
       if (item.otherAttributes && Array.isArray(item.otherAttributes)) {
         const attrs = {};
-        item.otherAttributes.forEach(attr => {
+        const definitions = item.otherAttributes.map((attr) => ({
+          label: attr.label,
+          type: attr.type || "text",
+          options: attr.options || [],
+        }));
+
+        item.otherAttributes.forEach((attr) => {
           attrs[attr.label] = attr.value;
         });
-        setAttributeValues(attrs);
+
+        setItemAttributes((prev) => mergeAttributes(prev, definitions));
+        setAttributeValues((prev) => ({ ...prev, ...attrs }));
       }
       
       // Set existing images and files for viewing
@@ -344,20 +382,23 @@ const AddItem = () => {
   useEffect(() => {
     if (!selectedCategoryId) {
       setSelectedCategory(null);
-      setAttributeValues({});
       return;
     }
     CategoriesService.getById(selectedCategoryId)
       .then(({ data }) => {
         setSelectedCategory(data);
-        // Only reset attribute values if we're creating a new item (not editing)
-        if (!editId && !viewId) {
-          const next = {};
-          (data?.attributes || []).forEach((a) => {
-            next[a.label] = null;
+        const categoryAttrs = data?.attributes || [];
+        setItemAttributes((prev) => mergeAttributes(prev, categoryAttrs));
+
+        setAttributeValues((prev) => {
+          const next = { ...prev };
+          categoryAttrs.forEach((a) => {
+            if (!(a.label in next)) {
+              next[a.label] = null;
+            }
           });
-          setAttributeValues(next);
-        }
+          return next;
+        });
       })
       .catch(() => {
         setSelectedCategory(null);
@@ -366,6 +407,62 @@ const AddItem = () => {
 
   const handleAttrChange = (label, value) => {
     setAttributeValues((prev) => ({ ...prev, [label]: value }));
+  };
+
+  const resetAttrForm = () => {
+    setAttrForm({ label: "", type: "text" });
+    setAttrOptionsText("");
+    setAttrFormError("");
+  };
+
+  const handleOpenAttrDialog = () => {
+    resetAttrForm();
+    setAttrDialogOpen(true);
+  };
+
+  const handleSaveAttributeDefinition = () => {
+    const label = attrForm.label.trim();
+    if (!label) {
+      setAttrFormError("Attribute label is required");
+      return;
+    }
+
+    const options = requiresOptions(attrForm.type)
+      ? attrOptionsText
+          .split(",")
+          .map((opt) => opt.trim())
+          .filter(Boolean)
+      : [];
+
+    const newAttr = {
+      label,
+      type: attrForm.type,
+      options,
+    };
+
+    setItemAttributes((prev) => mergeAttributes(prev, [newAttr]));
+    setAttributeValues((prev) => ({
+      ...prev,
+      [label]: label in prev ? prev[label] : null,
+    }));
+
+    setAttrDialogOpen(false);
+    resetAttrForm();
+  };
+
+  const combinedAttributes = useMemo(() => itemAttributes, [itemAttributes]);
+
+  const handleRemoveAttribute = (index) => {
+    const attrToRemove = combinedAttributes[index];
+    setItemAttributes((prev) =>
+      prev.filter((_, i) => i !== index)
+    );
+    // Optionally clear the value for this attribute
+    setAttributeValues((prev) => {
+      const next = { ...prev };
+      delete next[attrToRemove.label];
+      return next;
+    });
   };
 
   const uploadMany = async (files, folder = "items") => {
@@ -381,10 +478,11 @@ const AddItem = () => {
       const newImageUrls = imageFiles.length > 0 ? await uploadMany(imageFiles) : [];
       const newFileUrls = fileFiles.length > 0 ? await uploadMany(fileFiles) : [];
 
-      // Map attributes from the selected category, preserving the values from attributeValues
-      const attributesPayload = (selectedCategory?.attributes || []).map((a) => ({
+      // Map all item attributes (category + custom), preserving the values from attributeValues
+      const attributesPayload = combinedAttributes.map((a) => ({
         label: a.label,
         type: a.type,
+        options: a.options || [],
         value: attributeValues[a.label] ?? null,
       }));
 
@@ -894,22 +992,70 @@ const AddItem = () => {
             </Stack>
           </Box>
 
-          {selectedCategory && (
+          {(combinedAttributes.length > 0 || !isViewMode) && (
             <Box sx={{ mb: 3, maxWidth: "700px" }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                {selectedCategory?.name} Attributes
-              </Typography>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                sx={{ mb: 2, gap: 1 }}
+              >
+                <Box>
+                  <Typography variant="h6">
+                    Attributes
+                  </Typography>
+                  {selectedCategory?.name && (
+                    <Typography variant="caption" color="text.secondary">
+                      Current category: {selectedCategory.name}
+                    </Typography>
+                  )}
+                </Box>
+                {!isViewMode && (
+                  <Button
+                    startIcon={<AddIcon />}
+                    variant="outlined"
+                    size="small"
+                    onClick={handleOpenAttrDialog}
+                  >
+                    Add Attribute
+                  </Button>
+                )}
+              </Stack>
+
               <Divider sx={{ mb: 2 }} />
 
+              {combinedAttributes.length === 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  No attributes yet
+                </Typography>
+              )}
+
               <Stack spacing={0}>
-                {(selectedCategory?.attributes || []).map((attr) => (
-                  <Box key={attr.label + attr.type} sx={{ borderColor: "divider", p: 1 }}>
-                    <AttributeInput
-                      attribute={attr}
-                      value={attributeValues[attr.label]}
-                      onChange={(val) => handleAttrChange(attr.label, val)}
-                      disabled={isViewMode}
-                    />
+                {combinedAttributes.map((attr, index) => (
+                  <Box key={attr.label + attr.type}>
+                    {index > 0 && <Divider />}
+                    <Box sx={{ borderColor: "divider", p: 1 }}>
+                      <Stack direction="row" spacing={1} alignItems="flex-start">
+                        <Box sx={{ flex: 1 }}>
+                          <AttributeInput
+                            attribute={attr}
+                            value={attributeValues[attr.label]}
+                            onChange={(val) => handleAttrChange(attr.label, val)}
+                            disabled={isViewMode}
+                          />
+                        </Box>
+                        {!isViewMode && (
+                          <IconButton
+                            color="disabled"
+                            onClick={() => handleRemoveAttribute(index)}
+                            size="small"
+                            sx={{ mt: 1 }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        )}
+                      </Stack>
+                    </Box>
                   </Box>
                 ))}
               </Stack>
@@ -939,10 +1085,10 @@ const AddItem = () => {
                     setFileFiles([]);
                     setExistingImages([]);
                     setExistingFiles([]);
+                    setItemAttributes([]);
                     setAttributeValues({});
                     setUploadError("");
                   }}
-                  color="warning"
                   size="small"
                 >
                   Clear All Data
@@ -995,12 +1141,12 @@ const AddItem = () => {
           </Typography>
           <Divider sx={{ my: 2 }} />
           <Stack spacing={1.5}>
-            {selectedCategory && (selectedCategory.attributes || []).length === 0 && (
+            {combinedAttributes.length === 0 && (
               <Typography variant="body2" color="text.secondary">
                 No attributes for this category
               </Typography>
             )}
-            {selectedCategory && (selectedCategory.attributes || []).map((a) => (
+            {combinedAttributes.map((a) => (
               <Box key={a.label + a.type}>
                 <Typography variant="caption" color="text.secondary">
                   {a.label}
@@ -1013,6 +1159,81 @@ const AddItem = () => {
         <DialogActions>
           <Button onClick={() => setPreviewOpen(false)} size="small">
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={attrDialogOpen}
+        onClose={() => setAttrDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Add Attribute</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <TextField
+              label="Label"
+              value={attrForm.label}
+              onChange={(e) => {
+                setAttrForm((prev) => ({ ...prev, label: e.target.value }));
+                setAttrFormError("");
+              }}
+              fullWidth
+              size="small"
+              error={Boolean(attrFormError)}
+              helperText={attrFormError}
+              autoFocus
+            />
+            <TextField
+              select
+              label="Data Type"
+              value={attrForm.type}
+              onChange={(e) => setAttrForm((prev) => ({ ...prev, type: e.target.value }))}
+              fullWidth
+              size="small"
+            >
+              {ATTRIBUTE_TYPES.map((t) => (
+                <MenuItem key={t.value} value={t.value}>
+                  {t.label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {requiresOptions(attrForm.type) && (
+              <Box>
+                <TextField
+                  label="Options (comma separated)"
+                  value={attrOptionsText}
+                  onChange={(e) => setAttrOptionsText(e.target.value)}
+                  fullWidth
+                  size="small"
+                  helperText="Used for dropdown and radio"
+                />
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  mt={1}
+                  flexWrap="wrap"
+                >
+                  {attrOptionsText
+                    .split(",")
+                    .map((opt) => opt.trim())
+                    .filter(Boolean)
+                    .map((opt) => (
+                      <Chip key={opt} label={opt} size="small" />
+                    ))}
+                </Stack>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAttrDialogOpen(false)} size="small">
+            Cancel
+          </Button>
+          <Button onClick={handleSaveAttributeDefinition} variant="contained" size="small">
+            Save Attribute
           </Button>
         </DialogActions>
       </Dialog>

@@ -24,7 +24,7 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 const CurrencyField = ({ label, value, onChange, disabled }) => (
   <Box>
-    <Typography variant="body2" sx={{ mb: 0.5 }}>{label}</Typography>
+    <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>{label}</Typography>
     <TextField
       type="number"
       value={value ?? ""}
@@ -33,13 +33,14 @@ const CurrencyField = ({ label, value, onChange, disabled }) => (
       fullWidth
       size="small"
       disabled={disabled}
+      sx={{ mb: 1 }}
     />
   </Box>
 );
 
 const PercentageField = ({ label, value, onChange, disabled }) => (
   <Box>
-    <Typography variant="body2" sx={{ mb: 0.5 }}>{label}</Typography>
+    <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>{label}</Typography>
     <TextField
       type="number"
       value={value ?? ""}
@@ -48,6 +49,7 @@ const PercentageField = ({ label, value, onChange, disabled }) => (
       fullWidth
       size="small"
       disabled={disabled}
+      sx={{ mb: 1 }}
     />
   </Box>
 );
@@ -59,20 +61,21 @@ const AttributeInput = ({ attribute, value, onChange, disabled = false }) => {
     case "text":
       return (
         <Box>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>{label}</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>{label}</Typography>
           <TextField
             size="small"
             value={value ?? ""}
             onChange={(e) => onChange(e.target.value)}
             fullWidth
             disabled={disabled}
+            sx={{ mb: 1 }}
           />
         </Box>
       );
     case "number":
       return (
         <Box>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>{label}</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>{label}</Typography>
           <TextField
             size="small"
             type="number"
@@ -80,6 +83,7 @@ const AttributeInput = ({ attribute, value, onChange, disabled = false }) => {
             onChange={(e) => onChange(parseFloat(e.target.value))}
             fullWidth
             disabled={disabled}
+            sx={{ mb: 1 }}
           />
         </Box>
       );
@@ -106,13 +110,13 @@ const AttributeInput = ({ attribute, value, onChange, disabled = false }) => {
     case "date":
       return (
         <Box>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>{label}</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>{label}</Typography>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               value={value ? dayjs(value) : null}
               onChange={(d) => onChange(d ? d.toISOString() : null)}
               slotProps={{
-                textField: { size: "small", fullWidth: true, disabled: disabled },
+                textField: { size: "small", fullWidth: true, disabled: disabled, sx: { mb: 1 } },
               }}
               disabled={disabled}
             />
@@ -122,13 +126,13 @@ const AttributeInput = ({ attribute, value, onChange, disabled = false }) => {
     case "datetime":
       return (
         <Box>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>{label}</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>{label}</Typography>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DateTimePicker
               value={value ? dayjs(value) : null}
               onChange={(d) => onChange(d ? d.toISOString() : null)}
               slotProps={{
-                textField: { size: "small", fullWidth: true, disabled: disabled },
+                textField: { size: "small", fullWidth: true, disabled: disabled, sx: { mb: 1 } },
               }}
               disabled={disabled}
             />
@@ -138,8 +142,8 @@ const AttributeInput = ({ attribute, value, onChange, disabled = false }) => {
     case "select":
       return (
         <Box>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>{label}</Typography>
-          <FormControl fullWidth size="small" disabled={disabled}>
+          <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>{label}</Typography>
+          <FormControl fullWidth size="small" disabled={disabled} sx={{ mb: 1 }}>
             <Select
               value={value ?? ""}
               onChange={(e) => onChange(e.target.value)}
@@ -170,7 +174,7 @@ const AttributeInput = ({ attribute, value, onChange, disabled = false }) => {
     case "radio":
       return (
         <Box>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>{label}</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>{label}</Typography>
           <FormControl disabled={disabled}>
             <RadioGroup
               value={value ?? ""}
@@ -191,7 +195,7 @@ const AttributeInput = ({ attribute, value, onChange, disabled = false }) => {
     case "toggle":
       return (
         <Box>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>{label}</Typography>
+          <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>{label}</Typography>
           <ToggleButtonGroup
             exclusive
             value={value ? "on" : "off"}
