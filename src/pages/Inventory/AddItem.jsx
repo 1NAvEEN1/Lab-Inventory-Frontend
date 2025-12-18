@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   Box,
   Button,
@@ -149,19 +155,18 @@ const AddItem = () => {
     return ["jpg", "jpeg", "png", "gif", "webp"].includes(extension);
   };
 
-  const stripTimestampPrefix = (name = "") =>
-    name.replace(/^\d{4,}-/, "");
+  const stripTimestampPrefix = (name = "") => name.replace(/^\d{4,}-/, "");
 
   // Helper function to get file icon based on type
   const getFileIcon = (fileName) => {
     const extension = fileName.toLowerCase().split(".").pop();
     if (["pdf"].includes(extension)) {
-      return <PdfIcon sx={{ fontSize: 40, color: "#d32f2f" }} />;
+      return <PdfIcon sx={{ fontSize: 50, color: "#d32f2f", mt: 3 }} />;
     }
     if (["mp4", "avi", "mov", "wmv", "flv", "webm"].includes(extension)) {
-      return <VideoIcon sx={{ fontSize: 40, color: "#1976d2" }} />;
+      return <VideoIcon sx={{ fontSize: 50, color: "#1976d2" }} />;
     }
-    return <FileIcon sx={{ fontSize: 40, color: "#757575" }} />;
+    return <FileIcon sx={{ fontSize: 50, color: "#757575" }} />;
   };
 
   // Handle image file selection
@@ -554,27 +559,24 @@ const AddItem = () => {
     flexDirection: "column",
   };
 
-  const handleImageReorder = useCallback(
-    (fromIndex, toIndex) => {
-      if (fromIndex === null || toIndex === null) return;
-      if (fromIndex === toIndex) return;
-      setImages((prev) => {
-        const updated = [...prev];
-        if (
-          fromIndex < 0 ||
-          toIndex < 0 ||
-          fromIndex >= updated.length ||
-          toIndex >= updated.length
-        ) {
-          return prev;
-        }
-        const [moved] = updated.splice(fromIndex, 1);
-        updated.splice(toIndex, 0, moved);
-        return updated;
-      });
-    },
-    []
-  );
+  const handleImageReorder = useCallback((fromIndex, toIndex) => {
+    if (fromIndex === null || toIndex === null) return;
+    if (fromIndex === toIndex) return;
+    setImages((prev) => {
+      const updated = [...prev];
+      if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= updated.length ||
+        toIndex >= updated.length
+      ) {
+        return prev;
+      }
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated;
+    });
+  }, []);
 
   const imageList = useMemo(
     () =>
@@ -828,7 +830,6 @@ const AddItem = () => {
                         <Tooltip
                           title="Supported: JPEG, PNG, GIF, WebP · Max 5MB · Drag cards to reorder (first is primary)"
                           placement="bottom"
-                          
                         >
                           <Card
                             sx={{
@@ -842,7 +843,8 @@ const AddItem = () => {
                               backgroundColor: imageDragOver
                                 ? "rgba(25, 118, 210, 0.04)"
                                 : "transparent",
-                              cursor: images.length >= 5 ? "not-allowed" : "pointer",
+                              cursor:
+                                images.length >= 5 ? "not-allowed" : "pointer",
                               p: 2,
                             }}
                             onDragOver={handleImageDragOver}
@@ -874,14 +876,16 @@ const AddItem = () => {
                               size="small"
                               disabled={images.length >= 5}
                               startIcon={<CloudUploadIcon />}
-                              sx={{mt:2}}
+                              sx={{ mt: 2 }}
                             >
                               Upload Images
                               <input
                                 type="file"
                                 accept="image/*"
                                 multiple
-                                onChange={(e) => handleImageFileSelect(e.target.files)}
+                                onChange={(e) =>
+                                  handleImageFileSelect(e.target.files)
+                                }
                                 style={{ display: "none" }}
                               />
                             </Button>
@@ -934,18 +938,32 @@ const AddItem = () => {
                                 component="img"
                                 image={imageSrc}
                                 alt={item.displayName}
-                                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                sx={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                }}
                               />
                               {item.isPrimary && (
                                 <Chip
                                   label="Primary"
                                   size="small"
                                   color="primary"
-                                  sx={{ position: "absolute", bottom: 8, left: 8 }}
+                                  sx={{
+                                    position: "absolute",
+                                    bottom: 8,
+                                    left: 8,
+                                  }}
                                 />
                               )}
                             </Box>
-                            <CardContent sx={{ flex: 1, p: 1.25, "&:last-child": { pb: 1.25 } }}>
+                            <CardContent
+                              sx={{
+                                flex: 1,
+                                p: 1.25,
+                                "&:last-child": { pb: 1.25 },
+                              }}
+                            >
                               <Typography
                                 variant="caption"
                                 // noWrap
@@ -996,7 +1014,9 @@ const AddItem = () => {
                                 right: isViewMode ? 8 : 40,
                                 backgroundColor: "rgba(0,0,0,0.7)",
                                 color: "white",
-                                "&:hover": { backgroundColor: "rgba(0,0,0,0.8)" },
+                                "&:hover": {
+                                  backgroundColor: "rgba(0,0,0,0.8)",
+                                },
                               }}
                             >
                               <VisibilityIcon fontSize="small" />
@@ -1046,7 +1066,9 @@ const AddItem = () => {
                 )}
 
                 {/* File Preview Cards */}
-                {(!isViewMode || fileFiles.length > 0 || existingFiles.length > 0) && (
+                {(!isViewMode ||
+                  fileFiles.length > 0 ||
+                  existingFiles.length > 0) && (
                   <Grid container spacing={1.5} sx={{ mb: 2 }}>
                     {!isViewMode && (
                       <Grid item xs={6} sm={4} md={3}>
@@ -1078,7 +1100,9 @@ const AddItem = () => {
                             onDragLeave={handleFileDragLeave}
                             onDrop={handleFileDrop}
                           >
-                            <FileIcon sx={{ fontSize: 40, color: "grey.500", mb: 1 }} />
+                            <FileIcon
+                              sx={{ fontSize: 40, color: "grey.500", mb: 1 }}
+                            />
                             <Typography
                               variant="body2"
                               color="text.secondary"
@@ -1099,15 +1123,19 @@ const AddItem = () => {
                               variant="outlined"
                               component="label"
                               size="small"
-                              disabled={fileFiles.length + existingFiles.length >= 5}
+                              disabled={
+                                fileFiles.length + existingFiles.length >= 5
+                              }
                               startIcon={<CloudUploadIcon />}
-                              sx={{mt:2}}
+                              sx={{ mt: 2 }}
                             >
                               Upload Files
                               <input
                                 type="file"
                                 multiple
-                                onChange={(e) => handleFileFileSelect(e.target.files)}
+                                onChange={(e) =>
+                                  handleFileFileSelect(e.target.files)
+                                }
                                 style={{ display: "none" }}
                               />
                             </Button>
@@ -1133,18 +1161,35 @@ const AddItem = () => {
                           md={3}
                         >
                           <Card sx={{ ...cardBaseStyles }}>
-                            {isImage && (
+                            {isImage ? (
                               <Box sx={{ height: 140, position: "relative" }}>
                                 <CardMedia
                                   component="img"
                                   image={imageSrc}
                                   alt={rawFileName}
-                                  sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  sx={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                  }}
                                 />
                               </Box>
+                            ) : (
+                              <Box
+                                sx={{
+                                  height: 120,
+                                  position: "relative",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                {getFileIcon(rawFileName)}
+                              </Box>
                             )}
-                            <CardContent sx={{ textAlign: "center", p: 2, flex: 1 }}>
-                              {!isImage && getFileIcon(rawFileName)}
+                            <CardContent
+                              sx={{ textAlign: "center", p: 2, flex: 1 }}
+                            >
                               <Typography
                                 variant="caption"
                                 sx={{ display: "block", mt: isImage ? 0 : 1 }}
@@ -1218,7 +1263,13 @@ const AddItem = () => {
                         return file.previewUrl;
                       })();
                       return (
-                        <Grid item key={`new-file-${index}`} xs={6} sm={4} md={3}>
+                        <Grid
+                          item
+                          key={`new-file-${index}`}
+                          xs={6}
+                          sm={4}
+                          md={3}
+                        >
                           <Card sx={{ ...cardBaseStyles }}>
                             {isImage && (
                               <Box sx={{ height: 140, position: "relative" }}>
@@ -1226,16 +1277,22 @@ const AddItem = () => {
                                   component="img"
                                   image={imageSrc}
                                   alt={file.name}
-                                  sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  sx={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                  }}
                                 />
                               </Box>
                             )}
-                            <CardContent sx={{ textAlign: "center", p: 2, flex: 1 }}>
+                            <CardContent
+                              sx={{ textAlign: "center", p: 2, flex: 1 }}
+                            >
                               {!isImage && getFileIcon(file.name)}
                               <Typography
                                 variant="caption"
                                 sx={{ display: "block", mt: isImage ? 0 : 1 }}
-                                noWrap
+                                // noWrap
                                 title={file.name}
                               >
                                 {file.name}
@@ -1317,7 +1374,12 @@ const AddItem = () => {
               <Divider />
 
               {combinedAttributes.length === 0 && (
-                <Typography variant="body2" color="text.secondary" mt={2} mb={2}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  mt={2}
+                  mb={2}
+                >
                   No attributes yet
                 </Typography>
               )}
