@@ -5,16 +5,26 @@ import ProtectedRoute from "./ProtectedRoute";
 // utilities routing
 const Layout = Loadable(lazy(() => import("../layout/Layout")));
 const Test = Loadable(lazy(() => import("../modules/pages/test/Test")));
-const UserProfile = Loadable(lazy(() => import("../modules/user/profile/UserProfile")));
+const UserProfile = Loadable(
+  lazy(() => import("../modules/user/profile/UserProfile"))
+);
 
 // Inventory pages
 const Items = Loadable(lazy(() => import("../pages/Inventory/Items")));
-const Categories = Loadable(lazy(() => import("../pages/Inventory/Categories")));
+const Categories = Loadable(
+  lazy(() => import("../pages/Inventory/Categories"))
+);
 const Locations = Loadable(lazy(() => import("../pages/Inventory/Locations")));
 const AddItem = Loadable(lazy(() => import("../pages/Inventory/AddItem")));
-const AddCategory = Loadable(lazy(() => import("../pages/Inventory/AddCategory")));
-const CreateLocation = Loadable(lazy(() => import("../pages/Inventory/CreateLocation")));
-const ItemInventory = Loadable(lazy(() => import("../pages/Inventory/ItemInventory")));
+const AddCategory = Loadable(
+  lazy(() => import("../pages/Inventory/AddCategory"))
+);
+const CreateLocation = Loadable(
+  lazy(() => import("../pages/Inventory/CreateLocation"))
+);
+const ItemInventory = Loadable(
+  lazy(() => import("../pages/Inventory/ItemInventory"))
+);
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -33,6 +43,10 @@ const MainRoutes = {
     {
       path: "profile",
       element: <UserProfile />,
+    },
+    {
+      path: "dashboard",
+      element: <Test />,
     },
     // Inventory routes
     {
@@ -74,6 +88,10 @@ const MainRoutes = {
     {
       path: "inventory/locations/view-location/:id",
       element: <CreateLocation />,
+    },
+    {
+      path: "settings",
+      element: <Test />,
     },
   ],
 };

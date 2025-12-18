@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Box,
   Button,
@@ -18,6 +18,7 @@ import {
   IconButton,
   Grid,
   Snackbar,
+  Tooltip,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -83,9 +84,10 @@ const AddItem = () => {
   const [sku, setSku] = useState("");
   const [description, setDescription] = useState("");
 
-  const [imageFiles, setImageFiles] = useState([]);
+  const [images, setImages] = useState([]);
+  const imagesRef = useRef([]);
   const [fileFiles, setFileFiles] = useState([]);
-  const [existingImages, setExistingImages] = useState([]);
+  const fileFilesRef = useRef([]);
   const [existingFiles, setExistingFiles] = useState([]);
 
   // Upload states
@@ -98,10 +100,12 @@ const AddItem = () => {
     url: "",
     type: "",
   });
+  const previewUrlRef = useRef("");
 
   const [itemAttributes, setItemAttributes] = useState([]);
   const [attributeValues, setAttributeValues] = useState({});
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [draggingImageIndex, setDraggingImageIndex] = useState(null);
 
   const [attrDialogOpen, setAttrDialogOpen] = useState(false);
   const [attrForm, setAttrForm] = useState({ label: "", type: "text" });
@@ -140,6 +144,14 @@ const AddItem = () => {
     return null;
   }, []);
 
+  const isImageName = (fileName = "") => {
+    const extension = fileName.toLowerCase().split(".").pop();
+    return ["jpg", "jpeg", "png", "gif", "webp"].includes(extension);
+  };
+
+  const stripTimestampPrefix = (name = "") =>
+    name.replace(/^\d{4,}-/, "");
+
   // Helper function to get file icon based on type
   const getFileIcon = (fileName) => {
     const extension = fileName.toLowerCase().split(".").pop();
@@ -156,7 +168,7 @@ const AddItem = () => {
   const handleImageFileSelect = useCallback(
     (files) => {
       const newFiles = Array.from(files);
-      const totalCurrentCount = imageFiles.length + existingImages.length;
+      const totalCurrentCount = images.length;
 
       if (totalCurrentCount + newFiles.length > 5) {
         setUploadError(
@@ -181,11 +193,21 @@ const AddItem = () => {
       }
 
       if (!hasError && validFiles.length > 0) {
-        setImageFiles((prev) => [...prev, ...validFiles]);
+        setImages((prev) => [
+          ...prev,
+          ...validFiles.map((file, idx) => ({
+            id: `new-${Date.now()}-${idx}-${file.name}`,
+            type: "new",
+            file,
+            name: file.name,
+            size: file.size,
+            previewUrl: URL.createObjectURL(file),
+          })),
+        ]);
         setUploadError("");
       }
     },
-    [imageFiles.length, existingImages.length, validateImageFile]
+    [images.length, validateImageFile]
   );
 
   // Handle general file selection
@@ -217,7 +239,20 @@ const AddItem = () => {
       }
 
       if (!hasError && validFiles.length > 0) {
-        setFileFiles((prev) => [...prev, ...validFiles]);
+        setFileFiles((prev) => [
+          ...prev,
+          ...validFiles.map((file) => {
+            if (!file.previewUrl && file.type.startsWith("image/")) {
+              Object.defineProperty(file, "previewUrl", {
+                value: URL.createObjectURL(file),
+                writable: false,
+                configurable: true,
+                enumerable: false,
+              });
+            }
+            return file;
+          }),
+        ]);
         setUploadError("");
       }
     },
@@ -281,16 +316,25 @@ const AddItem = () => {
   );
 
   // Remove file functions
-  const removeImageFile = useCallback((index) => {
-    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+  const removeImageAt = useCallback((index) => {
+    setImages((prev) => {
+      const target = prev[index];
+      if (target?.previewUrl && String(target.previewUrl).startsWith("blob:")) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   }, []);
 
   const removeFileFile = useCallback((index) => {
-    setFileFiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-
-  const removeExistingImage = useCallback((index) => {
-    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+    setFileFiles((prev) => {
+      const target = prev[index];
+      const previewUrl = target?.previewUrl;
+      if (previewUrl && String(previewUrl).startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   }, []);
 
   const removeExistingFile = useCallback((index) => {
@@ -335,22 +379,36 @@ const AddItem = () => {
     setPreviewDialog({ open: false, url: "", type: "" });
   }, [previewDialog.url]);
 
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+
+  useEffect(() => {
+    fileFilesRef.current = fileFiles;
+  }, [fileFiles]);
+
+  useEffect(() => {
+    previewUrlRef.current = previewDialog.url;
+  }, [previewDialog.url]);
+
   // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       // Cleanup any remaining blob URLs
-      imageFiles.forEach((file) => {
-        if (file.url && file.url.startsWith("blob:")) {
-          URL.revokeObjectURL(file.url);
+      imagesRef.current.forEach((img) => {
+        const previewUrl = img.previewUrl || img.file?.previewUrl || img.url;
+        if (previewUrl && String(previewUrl).startsWith("blob:")) {
+          URL.revokeObjectURL(previewUrl);
         }
       });
-      fileFiles.forEach((file) => {
-        if (file.url && file.url.startsWith("blob:")) {
-          URL.revokeObjectURL(file.url);
+      fileFilesRef.current.forEach((file) => {
+        const previewUrl = file.previewUrl || file.url;
+        if (previewUrl && previewUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(previewUrl);
         }
       });
-      if (previewDialog.url && previewDialog.url.startsWith("blob:")) {
-        URL.revokeObjectURL(previewDialog.url);
+      if (previewUrlRef.current && previewUrlRef.current.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrlRef.current);
       }
     };
   }, []);
@@ -391,7 +449,14 @@ const AddItem = () => {
 
       // Set existing images and files for viewing
       if (item.images && Array.isArray(item.images)) {
-        setExistingImages(item.images);
+        setImages(
+          item.images.map((img, idx) => ({
+            id: `existing-${idx}-${img}`,
+            type: "existing",
+            url: img,
+            name: img.split("/").pop() || `Image ${idx + 1}`,
+          }))
+        );
       }
 
       if (item.files && Array.isArray(item.files)) {
@@ -476,6 +541,54 @@ const AddItem = () => {
 
   const combinedAttributes = useMemo(() => itemAttributes, [itemAttributes]);
 
+  const cardBaseStyles = {
+    position: "relative",
+    borderRadius: 2,
+    border: "1px solid",
+    borderColor: "divider",
+    boxShadow: "none",
+    overflow: "hidden",
+    backgroundColor: "background.paper",
+    minHeight: 200,
+    display: "flex",
+    flexDirection: "column",
+  };
+
+  const handleImageReorder = useCallback(
+    (fromIndex, toIndex) => {
+      if (fromIndex === null || toIndex === null) return;
+      if (fromIndex === toIndex) return;
+      setImages((prev) => {
+        const updated = [...prev];
+        if (
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= updated.length ||
+          toIndex >= updated.length
+        ) {
+          return prev;
+        }
+        const [moved] = updated.splice(fromIndex, 1);
+        updated.splice(toIndex, 0, moved);
+        return updated;
+      });
+    },
+    []
+  );
+
+  const imageList = useMemo(
+    () =>
+      images.map((item, index) => ({
+        ...item,
+        isPrimary: index === 0,
+        displayName:
+          item.type === "existing"
+            ? stripTimestampPrefix(item.name)
+            : item.name,
+      })),
+    [images]
+  );
+
   const handleRemoveAttribute = (index) => {
     const attrToRemove = combinedAttributes[index];
     setItemAttributes((prev) => prev.filter((_, i) => i !== index));
@@ -498,11 +611,21 @@ const AddItem = () => {
 
   const handleSave = async () => {
     try {
-      // Only upload new files if there are any
-      const newImageUrls =
-        imageFiles.length > 0 ? await uploadMany(imageFiles) : [];
+      const newImageTargets = images.filter((img) => img.type === "new");
+      const uploadedImages =
+        newImageTargets.length > 0
+          ? await uploadMany(newImageTargets.map((img) => img.file))
+          : [];
       const newFileUrls =
         fileFiles.length > 0 ? await uploadMany(fileFiles) : [];
+
+      let uploadIdx = 0;
+      const orderedImages = images.map((img) => {
+        if (img.type === "existing") return img.url;
+        const mapped = uploadedImages[uploadIdx];
+        uploadIdx += 1;
+        return mapped;
+      });
 
       // Map all item attributes (category + custom), preserving the values from attributeValues
       const attributesPayload = combinedAttributes.map((a) => ({
@@ -517,8 +640,8 @@ const AddItem = () => {
         sku,
         description,
         categoryId: selectedCategoryId || null,
-        // Combine existing and new images/files, filter out any undefined/null values
-        images: [...existingImages, ...newImageUrls].filter(Boolean),
+        // Combine existing and new images/files, keeping the user-defined order
+        images: orderedImages.filter(Boolean),
         files: [...existingFiles, ...newFileUrls].filter(Boolean),
         otherAttributes: attributesPayload,
       };
@@ -678,87 +801,17 @@ const AddItem = () => {
                   <Typography>
                     Images {!isViewMode && "(Max 5 images, 5MB each)"}
                   </Typography>
-                  {!isViewMode &&
-                    imageFiles.length + existingImages.length > 0 && (
-                      <Chip
-                        label={`${imageFiles.length + existingImages.length}/5`}
-                        size="small"
-                        color={
-                          imageFiles.length + existingImages.length >= 5
-                            ? "error"
-                            : "primary"
-                        }
-                        variant="outlined"
-                      />
-                    )}
+                  {!isViewMode && images.length > 0 && (
+                    <Chip
+                      label={`${images.length}/5`}
+                      size="small"
+                      color={images.length >= 5 ? "error" : "primary"}
+                      variant="outlined"
+                    />
+                  )}
                 </Stack>
 
-                {/* Upload Area - Only show in create/edit mode */}
-                {!isViewMode && (
-                  <Box
-                    onDragOver={handleImageDragOver}
-                    onDragLeave={handleImageDragLeave}
-                    onDrop={handleImageDrop}
-                    sx={{
-                      border: imageDragOver
-                        ? `2px dashed #1976d2`
-                        : `2px dashed #ccc`,
-                      borderRadius: 2,
-                      p: 2,
-                      mb: 2,
-                      textAlign: "center",
-                      backgroundColor: imageDragOver
-                        ? "rgba(25, 118, 210, 0.04)"
-                        : "transparent",
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        borderColor: "primary.main",
-                        backgroundColor: "rgba(25, 118, 210, 0.04)",
-                      },
-                    }}
-                  >
-                    <CloudUploadIcon
-                      sx={{ fontSize: 40, color: "grey.500", mb: 1 }}
-                    />
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 1 }}
-                    >
-                      {imageFiles.length + existingImages.length >= 5
-                        ? "Maximum image limit reached (5/5)"
-                        : "Drag and drop images here, or click to browse"}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mb: 2 }}
-                    >
-                      {imageFiles.length + existingImages.length >= 5
-                        ? "Remove existing images to upload new ones"
-                        : "Supported formats: JPEG, PNG, GIF, WebP (Max 5MB each)"}
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      size="small"
-                      disabled={imageFiles.length + existingImages.length >= 5}
-                      startIcon={<CloudUploadIcon />}
-                    >
-                      Upload Images
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => handleImageFileSelect(e.target.files)}
-                        style={{ display: "none" }}
-                      />
-                    </Button>
-                  </Box>
-                )}
-
-                {/* No images message in view mode */}
-                {isViewMode && existingImages.length === 0 && (
+                {isViewMode && images.length === 0 && (
                   <Typography
                     variant="body2"
                     color="text.secondary"
@@ -768,125 +821,190 @@ const AddItem = () => {
                   </Typography>
                 )}
 
-                {/* Image Preview Cards */}
-                {(imageFiles.length > 0 || existingImages.length > 0) && (
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
-                    {/* Existing Images (for view/edit mode) */}
-                    {existingImages.map((imageUrl, index) => (
-                      <Grid item key={`existing-${index}`} xs={6} sm={4} md={3}>
-                        <Card sx={{ position: "relative" }}>
-                          <CardMedia
-                            component="img"
-                            height="120"
-                            image={FilesService.getImageUrl("items", imageUrl)}
-                            alt={`Existing image ${index + 1}`}
-                            sx={{ objectFit: "cover" }}
-                          />
-                          <CardContent sx={{ p: 1, "&:last-child": { pb: 1 } }}>
-                            <Typography variant="caption" noWrap>
-                              Existing Image {index + 1}
-                            </Typography>
-                          </CardContent>
-                          {isEditMode && (
-                            <IconButton
-                              size="small"
-                              onClick={() => removeExistingImage(index)}
-                              sx={{
-                                position: "absolute",
-                                top: 4,
-                                right: 4,
-                                backgroundColor: "rgba(244, 67, 54, 0.8)",
-                                color: "white",
-                                "&:hover": {
-                                  backgroundColor: "rgba(244, 67, 54, 1)",
-                                },
-                              }}
-                            >
-                              <CloseIcon fontSize="small" />
-                            </IconButton>
-                          )}
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              previewExistingFile(imageUrl, "items")
-                            }
+                {(!isViewMode || images.length > 0) && (
+                  <Grid container spacing={1.5} sx={{ mb: 2 }}>
+                    {!isViewMode && (
+                      <Grid item xs={6} sm={4} md={3}>
+                        <Tooltip
+                          title="Supported: JPEG, PNG, GIF, WebP · Max 5MB · Drag cards to reorder (first is primary)"
+                          placement="bottom"
+                          
+                        >
+                          <Card
                             sx={{
-                              position: "absolute",
-                              top: 4,
-                              right: isEditMode ? 40 : 4,
-                              backgroundColor: "rgba(0,0,0,0.7)",
-                              color: "white",
-                              "&:hover": { backgroundColor: "rgba(0,0,0,0.8)" },
+                              ...cardBaseStyles,
+                              borderStyle: "dashed",
+                              borderColor:
+                                images.length >= 5 ? "divider" : "primary.main",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              textAlign: "center",
+                              backgroundColor: imageDragOver
+                                ? "rgba(25, 118, 210, 0.04)"
+                                : "transparent",
+                              cursor: images.length >= 5 ? "not-allowed" : "pointer",
+                              p: 2,
                             }}
+                            onDragOver={handleImageDragOver}
+                            onDragLeave={handleImageDragLeave}
+                            onDrop={handleImageDrop}
                           >
-                            <VisibilityIcon fontSize="small" />
-                          </IconButton>
-                        </Card>
-                      </Grid>
-                    ))}
-
-                    {/* New Images */}
-                    {imageFiles.map((file, index) => (
-                      <Grid item key={`new-${index}`} xs={6} sm={4} md={3}>
-                        <Card sx={{ position: "relative" }}>
-                          <CardMedia
-                            component="img"
-                            height="120"
-                            image={URL.createObjectURL(file)}
-                            alt={file.name}
-                            sx={{ objectFit: "cover" }}
-                          />
-                          <CardContent sx={{ p: 1, "&:last-child": { pb: 1 } }}>
+                            <CloudUploadIcon
+                              sx={{ fontSize: 40, color: "grey.500", mb: 1 }}
+                            />
                             <Typography
-                              variant="caption"
-                              noWrap
-                              title={file.name}
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mb: 0.5 }}
                             >
-                              {file.name}
+                              {images.length >= 5
+                                ? "Maximum image limit reached (5/5)"
+                                : "Drag images here or click to browse"}
                             </Typography>
-                            <Typography
+                            {/* <Typography
                               variant="caption"
                               color="text.secondary"
-                              sx={{ display: "block" }}
+                              sx={{ display: "block", mb: 1 }}
                             >
-                              {(file.size / 1024 / 1024).toFixed(2)} MB
-                            </Typography>
-                          </CardContent>
-                          {!isViewMode && (
+                              Supported: JPEG, PNG, GIF, WebP · Max 5MB · Drag cards to reorder (first is primary)
+                            </Typography> */}
+                            <Button
+                              variant="outlined"
+                              component="label"
+                              size="small"
+                              disabled={images.length >= 5}
+                              startIcon={<CloudUploadIcon />}
+                              sx={{mt:2}}
+                            >
+                              Upload Images
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => handleImageFileSelect(e.target.files)}
+                                style={{ display: "none" }}
+                              />
+                            </Button>
+                          </Card>
+                        </Tooltip>
+                      </Grid>
+                    )}
+                    {imageList.map((item, index) => {
+                      const imageSrc =
+                        item.type === "existing"
+                          ? FilesService.getImageUrl("items", item.url)
+                          : item.previewUrl || item.file?.previewUrl;
+
+                      return (
+                        <Grid
+                          item
+                          key={item.id}
+                          xs={6}
+                          sm={4}
+                          md={3}
+                          onDragOver={(e) => {
+                            if (!isViewMode) e.preventDefault();
+                          }}
+                          onDrop={(e) => {
+                            if (!isViewMode) {
+                              e.preventDefault();
+                              handleImageReorder(draggingImageIndex, index);
+                              setDraggingImageIndex(null);
+                            }
+                          }}
+                        >
+                          <Card
+                            sx={{
+                              ...cardBaseStyles,
+                              cursor: isViewMode ? "default" : "grab",
+                              borderColor: item.isPrimary
+                                ? "primary.main"
+                                : draggingImageIndex === index
+                                ? "primary.light"
+                                : "divider",
+                            }}
+                            draggable={!isViewMode}
+                            onDragStart={() => {
+                              if (!isViewMode) setDraggingImageIndex(index);
+                            }}
+                            onDragEnd={() => setDraggingImageIndex(null)}
+                          >
+                            <Box sx={{ height: 140, position: "relative" }}>
+                              <CardMedia
+                                component="img"
+                                image={imageSrc}
+                                alt={item.displayName}
+                                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                              {item.isPrimary && (
+                                <Chip
+                                  label="Primary"
+                                  size="small"
+                                  color="primary"
+                                  sx={{ position: "absolute", bottom: 8, left: 8 }}
+                                />
+                              )}
+                            </Box>
+                            <CardContent sx={{ flex: 1, p: 1.25, "&:last-child": { pb: 1.25 } }}>
+                              <Typography
+                                variant="caption"
+                                // noWrap
+                                title={item.displayName}
+                                sx={{ display: "block" }}
+                              >
+                                {item.displayName}
+                              </Typography>
+                              {item.type === "new" && item.size && (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ display: "block" }}
+                                >
+                                  {(item.size / 1024 / 1024).toFixed(2)} MB
+                                </Typography>
+                              )}
+                            </CardContent>
+
+                            {!isViewMode && (
+                              <IconButton
+                                size="small"
+                                onClick={() => removeImageAt(index)}
+                                sx={{
+                                  position: "absolute",
+                                  top: 8,
+                                  right: 8,
+                                  backgroundColor: "rgba(244, 67, 54, 0.9)",
+                                  color: "white",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(244, 67, 54, 1)",
+                                  },
+                                }}
+                              >
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                            )}
                             <IconButton
                               size="small"
-                              onClick={() => removeImageFile(index)}
+                              onClick={() =>
+                                item.type === "existing"
+                                  ? previewExistingFile(item.url, "items")
+                                  : previewFile(item.file)
+                              }
                               sx={{
                                 position: "absolute",
-                                top: 4,
-                                right: 4,
-                                backgroundColor: "rgba(244, 67, 54, 0.8)",
+                                top: 8,
+                                right: isViewMode ? 8 : 40,
+                                backgroundColor: "rgba(0,0,0,0.7)",
                                 color: "white",
-                                "&:hover": {
-                                  backgroundColor: "rgba(244, 67, 54, 1)",
-                                },
+                                "&:hover": { backgroundColor: "rgba(0,0,0,0.8)" },
                               }}
                             >
-                              <CloseIcon fontSize="small" />
+                              <VisibilityIcon fontSize="small" />
                             </IconButton>
-                          )}
-                          <IconButton
-                            size="small"
-                            onClick={() => previewFile(file)}
-                            sx={{
-                              position: "absolute",
-                              top: 4,
-                              left: 4,
-                              backgroundColor: "rgba(0,0,0,0.7)",
-                              color: "white",
-                              "&:hover": { backgroundColor: "rgba(0,0,0,0.8)" },
-                            }}
-                          >
-                            <VisibilityIcon fontSize="small" />
-                          </IconButton>
-                        </Card>
-                      </Grid>
-                    ))}
+                          </Card>
+                        </Grid>
+                      );
+                    })}
                   </Grid>
                 )}
               </Box>
@@ -916,67 +1034,6 @@ const AddItem = () => {
                     )}
                 </Stack>
 
-                {/* Upload Area - Only show in create/edit mode */}
-                {!isViewMode && (
-                  <Box
-                    onDragOver={handleFileDragOver}
-                    onDragLeave={handleFileDragLeave}
-                    onDrop={handleFileDrop}
-                    sx={{
-                      border: fileDragOver
-                        ? `2px dashed #1976d2`
-                        : `2px dashed #ccc`,
-                      borderRadius: 2,
-                      p: 2,
-                      mb: 2,
-                      textAlign: "center",
-                      backgroundColor: fileDragOver
-                        ? "rgba(25, 118, 210, 0.04)"
-                        : "transparent",
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        borderColor: "primary.main",
-                        backgroundColor: "rgba(25, 118, 210, 0.04)",
-                      },
-                    }}
-                  >
-                    <FileIcon sx={{ fontSize: 40, color: "grey.500", mb: 1 }} />
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 1 }}
-                    >
-                      {fileFiles.length + existingFiles.length >= 5
-                        ? "Maximum file limit reached (5/5)"
-                        : "Drag and drop files here, or click to browse"}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mb: 2 }}
-                    >
-                      {fileFiles.length + existingFiles.length >= 5
-                        ? "Remove existing files to upload new ones"
-                        : "Any file type supported (Max 5MB each)"}
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      size="small"
-                      disabled={fileFiles.length + existingFiles.length >= 5}
-                      startIcon={<CloudUploadIcon />}
-                    >
-                      Upload Files
-                      <input
-                        type="file"
-                        multiple
-                        onChange={(e) => handleFileFileSelect(e.target.files)}
-                        style={{ display: "none" }}
-                      />
-                    </Button>
-                  </Box>
-                )}
-
                 {/* No files message in view mode */}
                 {isViewMode && existingFiles.length === 0 && (
                   <Typography
@@ -989,12 +1046,84 @@ const AddItem = () => {
                 )}
 
                 {/* File Preview Cards */}
-                {(fileFiles.length > 0 || existingFiles.length > 0) && (
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
+                {(!isViewMode || fileFiles.length > 0 || existingFiles.length > 0) && (
+                  <Grid container spacing={1.5} sx={{ mb: 2 }}>
+                    {!isViewMode && (
+                      <Grid item xs={6} sm={4} md={3}>
+                        <Tooltip
+                          title="Any file type · Max 5MB"
+                          placement="top"
+                        >
+                          <Card
+                            sx={{
+                              ...cardBaseStyles,
+                              borderStyle: "dashed",
+                              borderColor:
+                                fileFiles.length + existingFiles.length >= 5
+                                  ? "divider"
+                                  : "primary.main",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              textAlign: "center",
+                              backgroundColor: fileDragOver
+                                ? "rgba(25, 118, 210, 0.04)"
+                                : "transparent",
+                              cursor:
+                                fileFiles.length + existingFiles.length >= 5
+                                  ? "not-allowed"
+                                  : "pointer",
+                              p: 2,
+                            }}
+                            onDragOver={handleFileDragOver}
+                            onDragLeave={handleFileDragLeave}
+                            onDrop={handleFileDrop}
+                          >
+                            <FileIcon sx={{ fontSize: 40, color: "grey.500", mb: 1 }} />
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mb: 0.5 }}
+                            >
+                              {fileFiles.length + existingFiles.length >= 5
+                                ? "Maximum file limit reached (5/5)"
+                                : "Drag files here or click to browse"}
+                            </Typography>
+                            {/* <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: "block", mb: 1 }}
+                            >
+                              Any type · Max 5MB
+                            </Typography> */}
+                            <Button
+                              variant="outlined"
+                              component="label"
+                              size="small"
+                              disabled={fileFiles.length + existingFiles.length >= 5}
+                              startIcon={<CloudUploadIcon />}
+                              sx={{mt:2}}
+                            >
+                              Upload Files
+                              <input
+                                type="file"
+                                multiple
+                                onChange={(e) => handleFileFileSelect(e.target.files)}
+                                style={{ display: "none" }}
+                              />
+                            </Button>
+                          </Card>
+                        </Tooltip>
+                      </Grid>
+                    )}
                     {/* Existing Files (for view/edit mode) */}
                     {existingFiles.map((fileUrl, index) => {
-                      const fileName =
+                      const rawFileName =
                         fileUrl.split("/").pop() || `File ${index + 1}`;
+                      const displayName = stripTimestampPrefix(rawFileName);
+                      const isImage = isImageName(rawFileName);
+                      const imageSrc = isImage
+                        ? FilesService.getImageUrl("items", fileUrl)
+                        : null;
                       return (
                         <Grid
                           item
@@ -1003,24 +1132,34 @@ const AddItem = () => {
                           sm={4}
                           md={3}
                         >
-                          <Card sx={{ position: "relative", minHeight: 140 }}>
-                            <CardContent sx={{ textAlign: "center", p: 2 }}>
-                              {getFileIcon(fileName)}
+                          <Card sx={{ ...cardBaseStyles }}>
+                            {isImage && (
+                              <Box sx={{ height: 140, position: "relative" }}>
+                                <CardMedia
+                                  component="img"
+                                  image={imageSrc}
+                                  alt={rawFileName}
+                                  sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                />
+                              </Box>
+                            )}
+                            <CardContent sx={{ textAlign: "center", p: 2, flex: 1 }}>
+                              {!isImage && getFileIcon(rawFileName)}
                               <Typography
                                 variant="caption"
-                                sx={{ display: "block", mt: 1 }}
-                                noWrap
-                                title={fileName}
+                                sx={{ display: "block", mt: isImage ? 0 : 1 }}
+                                // noWrap
+                                title={displayName}
                               >
-                                {fileName}
+                                {displayName}
                               </Typography>
-                              <Typography
+                              {/* <Typography
                                 variant="caption"
                                 color="text.secondary"
                                 sx={{ display: "block" }}
                               >
                                 Existing File
-                              </Typography>
+                              </Typography> */}
                             </CardContent>
                             {isEditMode && (
                               <IconButton
@@ -1064,68 +1203,93 @@ const AddItem = () => {
                     })}
 
                     {/* New Files */}
-                    {fileFiles.map((file, index) => (
-                      <Grid item key={`new-file-${index}`} xs={6} sm={4} md={3}>
-                        <Card sx={{ position: "relative", minHeight: 140 }}>
-                          <CardContent sx={{ textAlign: "center", p: 2 }}>
-                            {getFileIcon(file.name)}
-                            <Typography
-                              variant="caption"
-                              sx={{ display: "block", mt: 1 }}
-                              noWrap
-                              title={file.name}
-                            >
-                              {file.name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: "block" }}
-                            >
-                              {(file.size / 1024 / 1024).toFixed(2)} MB
-                            </Typography>
-                          </CardContent>
-                          {!isViewMode && (
-                            <IconButton
-                              size="small"
-                              onClick={() => removeFileFile(index)}
-                              sx={{
-                                position: "absolute",
-                                top: 4,
-                                right: 4,
-                                backgroundColor: "rgba(244, 67, 54, 0.8)",
-                                color: "white",
-                                "&:hover": {
-                                  backgroundColor: "rgba(244, 67, 54, 1)",
-                                },
-                              }}
-                            >
-                              <CloseIcon fontSize="small" />
-                            </IconButton>
-                          )}
-                          {(file.type.startsWith("image/") ||
-                            file.type === "application/pdf" ||
-                            file.type.startsWith("video/")) && (
-                            <IconButton
-                              size="small"
-                              onClick={() => previewFile(file)}
-                              sx={{
-                                position: "absolute",
-                                top: 4,
-                                left: 4,
-                                backgroundColor: "rgba(0,0,0,0.7)",
-                                color: "white",
-                                "&:hover": {
-                                  backgroundColor: "rgba(0,0,0,0.8)",
-                                },
-                              }}
-                            >
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          )}
-                        </Card>
-                      </Grid>
-                    ))}
+                    {fileFiles.map((file, index) => {
+                      const isImage = file.type?.startsWith("image/");
+                      const imageSrc = (() => {
+                        if (!isImage) return null;
+                        if (!file.previewUrl) {
+                          Object.defineProperty(file, "previewUrl", {
+                            value: URL.createObjectURL(file),
+                            writable: false,
+                            configurable: true,
+                            enumerable: false,
+                          });
+                        }
+                        return file.previewUrl;
+                      })();
+                      return (
+                        <Grid item key={`new-file-${index}`} xs={6} sm={4} md={3}>
+                          <Card sx={{ ...cardBaseStyles }}>
+                            {isImage && (
+                              <Box sx={{ height: 140, position: "relative" }}>
+                                <CardMedia
+                                  component="img"
+                                  image={imageSrc}
+                                  alt={file.name}
+                                  sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                />
+                              </Box>
+                            )}
+                            <CardContent sx={{ textAlign: "center", p: 2, flex: 1 }}>
+                              {!isImage && getFileIcon(file.name)}
+                              <Typography
+                                variant="caption"
+                                sx={{ display: "block", mt: isImage ? 0 : 1 }}
+                                noWrap
+                                title={file.name}
+                              >
+                                {file.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: "block" }}
+                              >
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </Typography>
+                            </CardContent>
+                            {!isViewMode && (
+                              <IconButton
+                                size="small"
+                                onClick={() => removeFileFile(index)}
+                                sx={{
+                                  position: "absolute",
+                                  top: 4,
+                                  right: 4,
+                                  backgroundColor: "rgba(244, 67, 54, 0.8)",
+                                  color: "white",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(244, 67, 54, 1)",
+                                  },
+                                }}
+                              >
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                            )}
+                            {(file.type.startsWith("image/") ||
+                              file.type === "application/pdf" ||
+                              file.type.startsWith("video/")) && (
+                              <IconButton
+                                size="small"
+                                onClick={() => previewFile(file)}
+                                sx={{
+                                  position: "absolute",
+                                  top: 4,
+                                  right: isViewMode ? 4 : 40,
+                                  backgroundColor: "rgba(0,0,0,0.7)",
+                                  color: "white",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(0,0,0,0.8)",
+                                  },
+                                }}
+                              >
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Card>
+                        </Grid>
+                      );
+                    })}
                   </Grid>
                 )}
               </Box>
@@ -1226,9 +1390,8 @@ const AddItem = () => {
                     setDescription("");
                     setSelectedCategoryId("");
                     setSelectedCategory(null);
-                    setImageFiles([]);
+                    setImages([]);
                     setFileFiles([]);
-                    setExistingImages([]);
                     setExistingFiles([]);
                     setItemAttributes([]);
                     setAttributeValues({});

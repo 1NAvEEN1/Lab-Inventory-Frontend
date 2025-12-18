@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Drawer,
   List,
@@ -23,7 +23,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 
 const navItems = [
-  { text: "Dashboard", icon: <InboxIcon />, route: "/test" },
+  { text: "Dashboard", icon: <InboxIcon />, route: "/dashboard" },
   {
     text: "Inventory",
     icon: <InventoryIcon />,
@@ -37,6 +37,7 @@ const navItems = [
   {
     text: "Settings",
     icon: <SettingsIcon />,
+    route: "/settings",
     // children: [
     //   { text: "Team", route: "/settings/team" },
     //   { text: "Members", route: "/settings/members" },
@@ -68,6 +69,25 @@ const DrawerMenu = ({ open, setOpen }) => {
 
   const isActive = (route) =>
     currentPath === route || currentPath.startsWith(route + "/");
+
+  const isParentActive = (route, children) => {
+    if (route) return isActive(route);
+    if (children && Array.isArray(children)) {
+      return children.some(({ route: childRoute }) => isActive(childRoute));
+    }
+    return false;
+  };
+
+  // Collapse all child menus when drawer is closed
+  useEffect(() => {
+    if (!open) {
+      const collapsed = {};
+      navItems.forEach(({ text, children }) => {
+        if (children) collapsed[text] = false;
+      });
+      setExpandedMenus(collapsed);
+    }
+  }, [open]);
 
   return (
     <Drawer
@@ -103,27 +123,33 @@ const DrawerMenu = ({ open, setOpen }) => {
                 button
                 onClick={() => {
                   if (children) {
-                    handleExpandToggle(text);
-                  } else {
+                    const firstChildRoute = children[0]?.route;
+                    if (firstChildRoute) navigate(firstChildRoute);
+                  } else if (route) {
                     navigate(route);
                   }
                 }}
-                selected={isActive(route)}
+                selected={isParentActive(route, children)}
                 sx={{
                   minWidth: "fit-content",
                   minHeight: 37,
-                  bgcolor: isActive(route) ? "#e6f1fd" : "inherit",
-                  color: isActive(route)
+                  bgcolor: isParentActive(route, children)
+                    ? "#e6f1fd"
+                    : "inherit",
+                  color: isParentActive(route, children)
                     ? "primary.main"
                     : theme.palette.grey[700],
                   borderRadius: 5,
                   mb: 1,
                   "&:hover": {
-                    bgcolor: isActive(route)
+                    bgcolor: isParentActive(route, children)
                       ? "#e6f1fd"
                       : theme.palette.grey[200],
                     cursor: "pointer",
                   },
+                  py: 0,
+                  pl: 1.7,
+                  pr: open ? 0.9 : 0,
                 }}
               >
                 <ListItemIcon sx={{ color: theme.palette.grey[500] }}>
@@ -143,9 +169,18 @@ const DrawerMenu = ({ open, setOpen }) => {
                     }}
                   />
                 )}
-                {children &&
-                  open &&
-                  (expandedMenus[text] ? <ExpandLess /> : <ExpandMore />)}
+                {children && open && (
+                  <IconButton
+                    size="small"
+                    edge="end"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleExpandToggle(text);
+                    }}
+                  >
+                    {expandedMenus[text] ? <ExpandLess /> : <ExpandMore />}
+                  </IconButton>
+                )}
               </ListItem>
             </Tooltip>
 
@@ -154,46 +189,50 @@ const DrawerMenu = ({ open, setOpen }) => {
               <Collapse in={expandedMenus[text]} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {children.map(({ text: childText, route: childRoute }) => (
-                    <ListItem
-                      key={childText}
-                      button
-                      onClick={() => navigate(childRoute)}
-                      selected={currentPath === childRoute}
-                      sx={{
-                        pl: open ? 4 : 2,
-                        minHeight: 36,
-                        bgcolor:
-                          currentPath === childRoute ? "#e6f1fd" : "inherit",
-                        color:
-                          currentPath === childRoute
-                            ? "primary.main"
-                            : theme.palette.grey[700],
-                        borderRadius: 3,
-                        mb: 0.5,
-                        "&:hover": {
+                    <Box pl={2}>
+                      <ListItem
+                        key={childText}
+                        button
+                        onClick={() => navigate(childRoute)}
+                        selected={currentPath === childRoute}
+                        sx={{
+                          // pl: open ? 4 : 2,
+                          minHeight: 36,
                           bgcolor:
+                            currentPath === childRoute ? "#e6f1fd" : "inherit",
+                          color:
                             currentPath === childRoute
-                              ? "#e6f1fd"
-                              : theme.palette.grey[100],
-                        },
-                      }}
-                    >
-                      {open && (
-                        <ListItemText 
-                          primary={childText} 
-                          sx={{
-                            "& .MuiListItemText-primary": {
-                              fontSize: "14px",
-                            },
-                          }}
-                        />
-                      )}
-                      {!open && (
-                        <Tooltip title={childText} placement="right">
-                          <Box width="100%" />
-                        </Tooltip>
-                      )}
-                    </ListItem>
+                              ? "primary.main"
+                              : theme.palette.grey[700],
+                          borderRadius: 3,
+                          mb: 0.5,
+                          cursor: "pointer",
+                          "&:hover": {
+                            bgcolor:
+                              currentPath === childRoute
+                                ? "#e6f1fd"
+                                : theme.palette.grey[100],
+                          },
+                          py: 0,
+                        }}
+                      >
+                        {open && (
+                          <ListItemText
+                            primary={childText}
+                            sx={{
+                              "& .MuiListItemText-primary": {
+                                fontSize: "14px",
+                              },
+                            }}
+                          />
+                        )}
+                        {!open && (
+                          <Tooltip title={childText} placement="right">
+                            <Box width="100%" />
+                          </Tooltip>
+                        )}
+                      </ListItem>
+                    </Box>
                   ))}
                 </List>
               </Collapse>
