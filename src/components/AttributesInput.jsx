@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import {
   Box,
@@ -13,9 +13,15 @@ import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
 const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
   const [attributes, setAttributes] = useState([{ key: "", value: "" }]);
+  const internalUpdateRef = useRef(false);
 
   // Parse initial value from object or JSON string
   useEffect(() => {
+    // Skip updating local state if this change originated from our own onChange
+    if (internalUpdateRef.current) {
+      internalUpdateRef.current = false;
+      return;
+    }
     if (value) {
       try {
         const parsed = typeof value === "string" ? JSON.parse(value) : value;
@@ -43,21 +49,23 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
   // Convert attributes to object and call onChange
   const updateAttributes = (newAttributes) => {
     setAttributes(newAttributes);
-
-    // Filter out empty rows and convert to object
+    // Filter out empty rows and convert to object (last wins for duplicates)
     const filtered = newAttributes.filter((attr) => attr.key.trim() !== "");
-    const attributesObj = {};
+    const out = {};
     filtered.forEach((attr) => {
-      if (attr.key.trim()) {
-        attributesObj[attr.key.trim()] = attr.value.trim();
+      const k = attr.key.trim();
+      if (k) {
+        out[k] = attr.value; // preserve user-entered spaces in value
       }
     });
-
-    // Pass as object instead of JSON string
     if (onChange) {
-      onChange(attributesObj);
+      internalUpdateRef.current = true;
+      onChange(out);
     }
   };
+
+  // For warning-only duplicate detection (case-insensitive, trimmed)
+  const canonicalizeKey = (key) => key.trim().toLowerCase();
 
   const handleKeyChange = (index, newKey) => {
     const newAttributes = [...attributes];
@@ -99,45 +107,64 @@ const AttributesInput = ({ value, onChange, disabled, error, helperText }) => {
         }}
       >
         <Stack spacing={2}>
-          {attributes.map((attr, index) => (
-            <Box key={index}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <TextField
-                  placeholder="Attribute"
-                  value={attr.key}
-                  onChange={(e) => handleKeyChange(index, e.target.value)}
-                  size="small"
-                  disabled={disabled}
-                  sx={{ flex: 2 }}
-                  error={error && attr.key.trim() === ""}
-                />
-                <TextField
-                  placeholder="Value"
-                  value={attr.value}
-                  onChange={(e) => handleValueChange(index, e.target.value)}
-                  size="small"
-                  disabled={disabled}
-                  sx={{ flex: 1 }}
-                />
-                <IconButton
-                  onClick={() => handleDeleteRow(index)}
-                  disabled={disabled || attributes.length === 1}
-                  size="small"
-                  color="error"
-                  sx={{
-                    minWidth: 32,
-                    height: 32,
-                    opacity: attributes.length === 1 ? 0.3 : 1,
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-              {index < attributes.length - 1 && (
-                <Divider sx={{ mt: 2, opacity: 0.5 }} />
-              )}
-            </Box>
-          ))}
+          {attributes.map((attr, index) => {
+            const cKey = canonicalizeKey(attr.key);
+            const isDuplicate =
+              !!cKey &&
+              attributes.some(
+                (a, i) => i !== index && canonicalizeKey(a.key) === cKey
+              );
+
+            return (
+              <Box key={index}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <TextField
+                    placeholder="Attribute name"
+                    value={attr.key}
+                    onChange={(e) => handleKeyChange(index, e.target.value)}
+                    size="small"
+                    disabled={disabled}
+                    sx={{ flex: 2 }}
+                    error={Boolean(error) && attr.key.trim() === ""|| isDuplicate}
+                    helperText={
+                      isDuplicate
+                        ? "Duplicate attribute name (allowed; last value saves)"
+                        : undefined
+                    }
+                    FormHelperTextProps={
+                      isDuplicate ? { sx: { color: "error.main" } } : undefined
+                    }
+                  />
+                  <Box>
+                    <TextField
+                      placeholder="Attribute value"
+                      value={attr.value}
+                      onChange={(e) => handleValueChange(index, e.target.value)}
+                      size="small"
+                      disabled={disabled}
+                      sx={{ flex: 1, mt: isDuplicate ? -2.5 : 0 }}
+                    />
+                  </Box>
+                  <IconButton
+                    onClick={() => handleDeleteRow(index)}
+                    disabled={disabled || attributes.length === 1}
+                    size="small"
+                    color="error"
+                    sx={{
+                      minWidth: 32,
+                      height: 32,
+                      opacity: attributes.length === 1 ? 0.3 : 1,
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
+                {index < attributes.length - 1 && (
+                  <Divider sx={{ mt: 2, opacity: 0.5 }} />
+                )}
+              </Box>
+            );
+          })}
 
           <Box
             sx={{

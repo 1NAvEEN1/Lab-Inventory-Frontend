@@ -20,6 +20,20 @@ import AttributesInput from "../../components/AttributesInput";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import LocationReassignDialog from "../../components/LocationReassignDialog";
 
+// Helper function to merge parent attributes with current attributes
+// Current attributes take precedence over parent attributes
+const mergeAttributes = (parentAttrs = {}, currentAttrs = {}) => {
+  // Start with parent attributes
+  const merged = { ...parentAttrs };
+  
+  // Override with current attributes (current takes precedence)
+  Object.keys(currentAttrs).forEach((key) => {
+    merged[key] = currentAttrs[key];
+  });
+  
+  return merged;
+};
+
 const CreateLocation = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -48,6 +62,22 @@ const CreateLocation = () => {
       fetchLocation(locationId);
     }
   }, [viewId, editId]);
+
+  // Inherit attributes from parent location when selected
+  useEffect(() => {
+    if (!parentLocationId) return;
+
+    LocationsService.getById(parentLocationId)
+      .then(({ data }) => {
+        const parentAttrs = data?.attributes || {};
+        setAttributes((prev) => {
+          return mergeAttributes(parentAttrs, prev);
+        });
+      })
+      .catch(() => {
+        // Swallow errors to avoid blocking user input; parent attributes just won't merge
+      });
+  }, [parentLocationId]);
 
   // Set parent location when parent parameter is provided
   useEffect(() => {
