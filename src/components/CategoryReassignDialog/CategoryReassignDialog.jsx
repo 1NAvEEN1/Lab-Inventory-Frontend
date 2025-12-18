@@ -94,7 +94,7 @@ const CategoryReassignDialog = ({
           <ParentCategorySelector
             value={selectedCategoryId}
             onChange={setSelectedCategoryId}
-            excludeCategoryId={currentCategoryId}
+            disabledCategoryId={currentCategoryId}
             placeholder="Choose a category to reassign items"
           />
         </Box>

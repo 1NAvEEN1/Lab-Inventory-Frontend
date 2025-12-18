@@ -640,6 +640,7 @@ const AddCategory = () => {
                   value={parentCategoryId}
                   onChange={setParentCategoryId}
                   disabled={isViewMode}
+                  disabledCategoryId={editId || viewId}
                 />
               </Box>
             </Stack>

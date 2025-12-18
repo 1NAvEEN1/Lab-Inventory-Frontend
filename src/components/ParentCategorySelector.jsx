@@ -32,12 +32,13 @@ const flattenTree = (nodes, level = 0) => {
 };
 
 // Render tree nodes for dropdown
-const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
+const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue, disabledCategoryId) => {
   const theme = useTheme();
   return nodes.map((node) => {
     const hasChildren =
       Array.isArray(node.children) && node.children.length > 0;
     const isSelected = selectedValue && String(node.id || node._id) === String(selectedValue);
+    const isDisabled = disabledCategoryId && String(node.id || node._id) === String(disabledCategoryId);
     
     return (
       <TreeItem
@@ -47,13 +48,16 @@ const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
           <Box
             onClick={(e) => {
               e.stopPropagation();
-              onNodeClick && onNodeClick(node);
+              if (!isDisabled) {
+                onNodeClick && onNodeClick(node);
+              }
             }}
             sx={{
               width: "100%",
-              cursor: "pointer",
+              cursor: isDisabled ? "not-allowed" : "pointer",
+              opacity: isDisabled ? 0.5 : 1,
             //   backgroundColor: isSelected ? theme.palette.primary.main : "transparent",
-              color: isSelected ? theme.palette.primary.main: "inherit",
+              color: isSelected ? theme.palette.primary.main : isDisabled ? theme.palette.text.disabled : "inherit",
               borderRadius: 1,
               px: 0,
               py: 0.5,
@@ -65,7 +69,7 @@ const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
             //   },
             }}
           >
-            {node.name || "Untitled"}
+            {node.name || "Untitled"} {isDisabled ? "(Current)" : ""}
           </Box>
         }
         sx={{
@@ -98,7 +102,7 @@ const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
         }}
       >
         {hasChildren
-          ? renderTreeNodes(node.children, level + 1, onNodeClick, selectedValue)
+          ? renderTreeNodes(node.children, level + 1, onNodeClick, selectedValue, disabledCategoryId)
           : null}
       </TreeItem>
     );
@@ -112,6 +116,7 @@ const ParentCategorySelector = ({
   helperText,
   disabled,
   excludeCategoryId,
+  disabledCategoryId,
   placeholder,
 }) => {
   const [loading, setLoading] = useState(false);
@@ -310,12 +315,15 @@ const ParentCategorySelector = ({
                 )
                 .map((node) => {
                   const isSelected = value && String(node.id || node._id) === String(value);
+                  const isDisabled = disabledCategoryId && String(node.id || node._id) === String(disabledCategoryId);
                   return (
                     <Box
                       key={node.id || node._id}
                       onClick={() => {
-                        console.log("Search result clicked:", node);
-                        handleTreeNodeClick(node);
+                        if (!isDisabled) {
+                          console.log("Search result clicked:", node);
+                          handleTreeNodeClick(node);
+                        }
                       }}
                       sx={{
                         paddingLeft: `${1 + (node.level || 0) * 2}rem`,
@@ -323,17 +331,18 @@ const ParentCategorySelector = ({
                         paddingX: 2,
                         fontSize: "0.875rem",
                         fontWeight: node.level === 0 ? 500 : 400,
-                        cursor: "pointer",
+                        cursor: isDisabled ? "not-allowed" : "pointer",
+                        opacity: isDisabled ? 0.5 : 1,
                         backgroundColor: isSelected ? "primary.main" : "transparent",
-                        color: isSelected ? "primary.contrastText" : "inherit",
+                        color: isSelected ? "primary.contrastText" : isDisabled ? "text.disabled" : "inherit",
                         borderRadius: 1,
                         mx: 1,
                         "&:hover": {
-                          backgroundColor: isSelected ? "primary.dark" : "action.hover",
+                          backgroundColor: isSelected ? "primary.dark" : isDisabled ? "transparent" : "action.hover",
                         },
                       }}
                     >
-                      {node.name || "Untitled"}
+                      {node.name || "Untitled"} {isDisabled ? "(Current)" : ""}
                     </Box>
                   );
                 })}
@@ -350,7 +359,7 @@ const ParentCategorySelector = ({
                 },
               }}
             >
-              {renderTreeNodes(nodes, 0, handleTreeNodeClick, value)}
+              {renderTreeNodes(nodes, 0, handleTreeNodeClick, value, disabledCategoryId)}
             </SimpleTreeView>
           )}
         </Paper>
@@ -366,6 +375,7 @@ ParentCategorySelector.propTypes = {
   helperText: PropTypes.string,
   disabled: PropTypes.bool,
   excludeCategoryId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  disabledCategoryId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   placeholder: PropTypes.string,
 };
 
@@ -376,6 +386,7 @@ ParentCategorySelector.defaultProps = {
   helperText: "",
   disabled: false,
   excludeCategoryId: null,
+  disabledCategoryId: null,
   placeholder: null,
 };
 

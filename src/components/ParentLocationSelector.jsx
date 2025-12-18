@@ -32,13 +32,14 @@ const flattenTree = (nodes, level = 0) => {
 };
 
 // Render tree nodes for dropdown
-const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
+const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue, disabledLocationId) => {
   const theme = useTheme();
   return nodes.map((node) => {
     const hasChildren =
       Array.isArray(node.children) && node.children.length > 0;
     const isSelected =
       selectedValue && String(node.id) === String(selectedValue);
+    const isDisabled = disabledLocationId && String(node.id) === String(disabledLocationId);
 
     return (
       <TreeItem
@@ -48,20 +49,22 @@ const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
           <Box
             onClick={(e) => {
               e.stopPropagation();
-              onNodeClick && onNodeClick(node);
+              if (!isDisabled) {
+                onNodeClick && onNodeClick(node);
+              }
             }}
             sx={{
               width: "100%",
-              cursor: "pointer",
-
-              color: isSelected ? theme.palette.primary.main : "inherit",
+              cursor: isDisabled ? "not-allowed" : "pointer",
+              opacity: isDisabled ? 0.5 : 1,
+              color: isSelected ? theme.palette.primary.main : isDisabled ? theme.palette.text.disabled : "inherit",
               borderRadius: 1,
               px: 1,
               py: 0.5,
               mx: 0.5,
             }}
           >
-            {node.name || "Untitled"}
+            {node.name || "Untitled"} {isDisabled ? "(Current)" : ""}
           </Box>
         }
         sx={{
@@ -105,7 +108,8 @@ const renderTreeNodes = (nodes, level = 0, onNodeClick, selectedValue) => {
               node.children,
               level + 1,
               onNodeClick,
-              selectedValue
+              selectedValue,
+              disabledLocationId
             )
           : null}
       </TreeItem>
@@ -120,6 +124,7 @@ const ParentLocationSelector = ({
   helperText,
   disabled,
   excludeLocationId,
+  disabledLocationId,
   placeholder,
 }) => {
   const [loading, setLoading] = useState(false);
@@ -318,12 +323,15 @@ const ParentLocationSelector = ({
                 )
                 .map((node) => {
                   const isSelected = value && String(node.id) === String(value);
+                  const isDisabled = disabledLocationId && String(node.id) === String(disabledLocationId);
                   return (
                     <Box
                       key={node.id}
                       onClick={() => {
-                        console.log("Search result clicked:", node);
-                        handleTreeNodeClick(node);
+                        if (!isDisabled) {
+                          console.log("Search result clicked:", node);
+                          handleTreeNodeClick(node);
+                        }
                       }}
                       sx={{
                         paddingLeft: `${1 + (node.level || 0) * 2}rem`,
@@ -331,21 +339,24 @@ const ParentLocationSelector = ({
                         paddingX: 2,
                         fontSize: "0.875rem",
                         fontWeight: node.level === 0 ? 500 : 400,
-                        cursor: "pointer",
+                        cursor: isDisabled ? "not-allowed" : "pointer",
+                        opacity: isDisabled ? 0.5 : 1,
                         backgroundColor: isSelected
                           ? "primary.main"
                           : "transparent",
-                        color: isSelected ? "primary.contrastText" : "inherit",
+                        color: isSelected ? "primary.contrastText" : isDisabled ? "text.disabled" : "inherit",
                         borderRadius: 1,
                         mx: 1,
                         "&:hover": {
                           backgroundColor: isSelected
                             ? "primary.dark"
+                            : isDisabled
+                            ? "transparent"
                             : "action.hover",
                         },
                       }}
                     >
-                      {node.name || "Untitled"}
+                      {node.name || "Untitled"} {isDisabled ? "(Current)" : ""}
                     </Box>
                   );
                 })}
@@ -362,7 +373,7 @@ const ParentLocationSelector = ({
                 },
               }}
             >
-              {renderTreeNodes(nodes, 0, handleTreeNodeClick, value)}
+              {renderTreeNodes(nodes, 0, handleTreeNodeClick, value, disabledLocationId)}
             </SimpleTreeView>
           )}
         </Paper>
@@ -378,6 +389,7 @@ ParentLocationSelector.propTypes = {
   helperText: PropTypes.string,
   disabled: PropTypes.bool,
   excludeLocationId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  disabledLocationId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   placeholder: PropTypes.string,
 };
 
@@ -388,6 +400,7 @@ ParentLocationSelector.defaultProps = {
   helperText: "",
   disabled: false,
   excludeLocationId: null,
+  disabledLocationId: null,
   placeholder: null,
 };
 

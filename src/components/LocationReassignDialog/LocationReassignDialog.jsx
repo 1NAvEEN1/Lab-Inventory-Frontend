@@ -94,7 +94,7 @@ const LocationReassignDialog = ({
           <ParentLocationSelector
             value={selectedLocationId}
             onChange={setSelectedLocationId}
-            excludeLocationId={currentLocationId}
+            disabledLocationId={currentLocationId}
             placeholder="Choose a location to reassign items"
           />
         </Box>

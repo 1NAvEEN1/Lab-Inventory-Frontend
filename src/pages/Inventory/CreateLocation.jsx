@@ -268,6 +268,7 @@ const CreateLocation = () => {
                   value={parentLocationId}
                   onChange={setParentLocationId}
                   disabled={loading || isViewMode}
+                  disabledLocationId={editId || viewId}
                 />
               </Box>
 
